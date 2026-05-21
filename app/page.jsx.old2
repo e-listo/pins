@@ -1,0 +1,804 @@
+"use client";
+import { getBarang, getTransaksi, addBarang, addTransaksi } from "../src/lib/supabase";
+import { getSession, getPegawai, logout } from "../src/lib/auth";
+import UserManagement from "../src/components/UserManagement";
+import { useState, useEffect } from "react";
+
+const Icon = ({ d, size = 20, color = "currentColor", strokeWidth = 1.8, fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
+  </svg>
+);
+const Icons = {
+  dashboard: ["M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z", "M9 22V12h6v10"],
+  barang: ["M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z", "M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"],
+  gudang: ["M3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z", "M3 9V7a2 2 0 012-2h14a2 2 0 012 2v2"],
+  transaksi: ["M12 5v14", "M5 12l7-7 7 7"],
+  qr: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM17 14h4M14 17v4M17 17h4v4h-4z",
+  laporan: ["M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z", "M14 2v6h6", "M16 13H8M16 17H8M10 9H8"],
+  alert: ["M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z", "M12 9v4M12 17h.01"],
+  plus: "M12 5v14M5 12h14",
+  search: ["M11 18a7 7 0 100-14 7 7 0 000 14z", "M21 21l-4.35-4.35"],
+  bell: ["M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9", "M13.73 21a2 2 0 01-3.46 0"],
+  user: ["M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2", "M12 11a4 4 0 100-8 4 4 0 000 8"],
+  close: "M18 6L6 18M6 6l12 12",
+  arrow: "M9 18l6-6-6-6",
+  download: ["M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+  box: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
+  check: "M20 6L9 17l-5-5",
+  trending: "M23 6l-9.5 9.5-5-5L1 18",
+  camera: ["M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z", "M12 17a4 4 0 100-8 4 4 0 000 8"],
+  edit: ["M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7", "M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"],
+  trash: ["M3 6h18", "M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"],
+  refresh: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15",
+  settings: ["M12 15a3 3 0 100-6 3 3 0 000 6z", "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"],
+  list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
+  collapse: "M15 18l-6-6 6-6",
+  users: ["M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2", "M23 21v-2a4 4 0 00-3-3.87", "M9 11a4 4 0 100-8 4 4 0 000 8", "M16 3.13a4 4 0 010 7.75"],
+  logout2: ["M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4", "M16 17l5-5-5-5", "M21 12H9"],
+};
+
+const kategoriList = ["Alat Berat", "Material Konstruksi", "ATK", "Mebel & Perabot", "Elektronik", "Keselamatan Kerja"];
+const satuanList = ["Unit", "Buah", "Kg", "Meter", "Liter", "Rim", "Set", "Lembar", "Roll"];
+const gudangList = ["Gudang A – Jl. Kenari", "Gudang B – Jl. Magelang", "Proyek Jl. Malioboro", "Proyek Jembatan Winongo"];
+
+const initialBarang = [
+  { id: "PJU-2024-001", kode: "PJU.5.2.6.01.001", nama: "Lampu LED Jalan 150W", kategori: "Elektronik", satuan: "Unit", stok: 145, stokMin: 50, gudang: "Gudang A – Jl. Kenari", harga: 850000 },
+  { id: "PJU-2024-002", kode: "PJU.5.2.6.01.002", nama: "Tiang Lampu Ornamen 7m", kategori: "Material Konstruksi", satuan: "Unit", stok: 12, stokMin: 20, gudang: "Gudang B – Jl. Magelang", harga: 3500000 },
+  { id: "PJU-2024-003", kode: "PJU.5.2.6.02.001", nama: "Kabel NYY 4x10mm", kategori: "Material Konstruksi", satuan: "Meter", stok: 850, stokMin: 200, gudang: "Gudang A – Jl. Kenari", harga: 45000 },
+  { id: "PJU-2024-004", kode: "PJU.5.2.6.03.001", nama: "Box Panel Listrik", kategori: "Elektronik", satuan: "Unit", stok: 8, stokMin: 10, gudang: "Gudang A – Jl. Kenari", harga: 1200000 },
+  { id: "PJU-2024-005", kode: "PJU.5.2.4.01.001", nama: "Helm Safety", kategori: "Keselamatan Kerja", satuan: "Buah", stok: 35, stokMin: 30, gudang: "Gudang B – Jl. Magelang", harga: 125000 },
+  { id: "PJU-2024-006", kode: "PJU.5.2.1.01.001", nama: "Kertas HVS A4 80gr", kategori: "ATK", satuan: "Rim", stok: 48, stokMin: 20, gudang: "Gudang A – Jl. Kenari", harga: 55000 },
+  { id: "PJU-2024-007", kode: "PJU.5.2.2.01.001", nama: "Excavator Mini", kategori: "Alat Berat", satuan: "Unit", stok: 2, stokMin: 1, gudang: "Gudang B – Jl. Magelang", harga: 450000000 },
+  { id: "PJU-2024-008", kode: "PJU.5.2.5.01.001", nama: "Kursi Kerja Ergonomis", kategori: "Mebel & Perabot", satuan: "Unit", stok: 24, stokMin: 10, gudang: "Gudang A – Jl. Kenari", harga: 1800000 },
+];
+
+const initialTransaksi = [
+  { id: "TRX-2024-0118", tipe: "masuk", barang: "Lampu LED Jalan 150W", kode: "PJU.5.2.6.01.001", jumlah: 50, gudang: "Gudang A – Jl. Kenari", tanggal: "2024-07-15", no_spk: "SPK/PUPKP/2024/0045", keterangan: "Pengadaan rutin Q3" },
+  { id: "TRX-2024-0117", tipe: "keluar", barang: "Tiang Lampu Ornamen 7m", kode: "PJU.5.2.6.01.002", jumlah: 3, gudang: "Gudang B – Jl. Magelang", tanggal: "2024-07-14", no_spk: "SPK/PUPKP/2024/0044", keterangan: "Proyek Jl. Malioboro" },
+  { id: "TRX-2024-0116", tipe: "mutasi", barang: "Kabel NYY 4x10mm", kode: "PJU.5.2.6.02.001", jumlah: 200, gudang: "Gudang A → Proyek Winongo", tanggal: "2024-07-13", no_spk: "SPK/PUPKP/2024/0043", keterangan: "Mutasi proyek jembatan" },
+  { id: "TRX-2024-0115", tipe: "masuk", barang: "Box Panel Listrik", kode: "PJU.5.2.6.03.001", jumlah: 5, gudang: "Gudang A – Jl. Kenari", tanggal: "2024-07-12", no_spk: "SPK/PUPKP/2024/0042", keterangan: "Restock gudang" },
+  { id: "TRX-2024-0114", tipe: "keluar", barang: "Helm Safety", kode: "PJU.5.2.4.01.001", jumlah: 10, gudang: "Gudang B – Jl. Magelang", tanggal: "2024-07-11", no_spk: "SPK/PUPKP/2024/0041", keterangan: "Proyek Jl. Malioboro" },
+  { id: "TRX-2024-0113", tipe: "masuk", barang: "Kertas HVS A4 80gr", kode: "PJU.5.2.1.01.001", jumlah: 20, gudang: "Gudang A – Jl. Kenari", tanggal: "2024-07-10", no_spk: "SPK/PUPKP/2024/0040", keterangan: "Pembelian ATK bulanan" },
+];
+
+function QRCodeSVG({ value, size = 140 }) {
+  const hash = s => s.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+  const seed = Math.abs(hash(value)); const grid = 21; const cs = size / grid;
+  const cells = [];
+  for (let r = 0; r < grid; r++) for (let c = 0; c < grid; c++) {
+    const isFinder = (r < 8 && c < 8) || (r < 8 && c >= grid - 8) || (r >= grid - 8 && c < 8);
+    const on = isFinder ? (r === 0 || r === 7 || c === 0 || c === 7 || (r >= 2 && r <= 4 && c >= 2 && c <= 4) || (r >= 2 && r <= 4 && c >= grid - 6 && c <= grid - 3) || (r >= grid - 6 && r <= grid - 3 && c >= 2 && c <= 4)) : (((seed * (r * grid + c + 1)) & 0x3f) > 20);
+    cells.push({ r, c, on });
+  }
+  return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}><rect width={size} height={size} fill="white" />{cells.map(({ r, c, on }) => on ? <rect key={`${r}-${c}`} x={c * cs} y={r * cs} width={cs} height={cs} fill="#111827" /> : null)}</svg>;
+}
+
+function Sparkline({ data, color = "#3b82f6", h = 30, w = 70 }) {
+  const max = Math.max(...data), min = Math.min(...data);
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / (max - min + 1)) * h}`);
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}><path d={`M${pts.join("L")}V${h}H0Z`} fill={color + "20"} /><path d={`M${pts.join("L")}`} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" /></svg>;
+}
+
+function Badge({ label, type }) {
+  const m = { masuk: "bg-emerald-100 text-emerald-700", keluar: "bg-red-100 text-red-700", mutasi: "bg-amber-100 text-amber-700", alert: "bg-red-100 text-red-600", ok: "bg-emerald-100 text-emerald-700" };
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${m[type] || "bg-slate-100 text-slate-600"}`}>{label}</span>;
+}
+
+function Modal({ title, onClose, width = "max-w-lg", children }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}>
+      <div className={`bg-white rounded-2xl shadow-2xl w-full ${width} max-h-[90vh] overflow-y-auto`} style={{ animation: "modalIn .18s ease" }}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><Icon d={Icons.close} size={16} /></button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+const inputCls = "w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 hover:bg-white transition-colors";
+function Field({ label, children }) {
+  return <div className="mb-3"><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>{children}</div>;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DESKTOP PAGES
+// ──────────────────────────────────────────────────────────────────────────────
+function DesktopDashboard({ barang, transaksi, setPage }) {
+  const alerts = barang.filter(b => b.stok <= b.stokMin);
+  const totalStok = barang.reduce((a, b) => a + b.stok, 0);
+  const nilaiTotal = barang.reduce((a, b) => a + b.stok * b.harga, 0);
+  const stats = [
+    { label: "Jenis Barang", value: barang.length, sub: "total item terdaftar", color: "#3b82f6", spark: [20, 22, 24, 23, 26, 28, 30] },
+    { label: "Total Stok", value: totalStok.toLocaleString("id"), sub: "unit di semua gudang", color: "#10b981", spark: [80, 90, 88, 100, 105, 108, 112] },
+    { label: "Alert Stok Min.", value: alerts.length, sub: "item perlu restock", color: "#ef4444", spark: [1, 2, 1, 3, 2, 3, alerts.length] },
+    { label: "Nilai Inventaris", value: `Rp ${(nilaiTotal / 1e9).toFixed(2)}M`, sub: "estimasi aset total", color: "#f59e0b", spark: [180, 190, 195, 200, 210, 215, 220] },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-slate-800">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 bg-white transition-colors"><Icon d={Icons.download} size={15} />Export</button>
+          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"><Icon d={Icons.refresh} size={15} />Refresh</button>
+        </div>
+      </div>
+
+      {alerts.length > 0 && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+          <Icon d={Icons.alert} size={18} color="#ef4444" />
+          <div className="flex-1"><span className="text-sm font-bold text-red-700">Stok Minimum: </span><span className="text-sm text-red-600">{alerts.map(a => a.nama).join(", ")}</span></div>
+          <button onClick={() => setPage("barang")} className="text-xs font-semibold text-red-600 hover:underline">Lihat →</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: s.color + "18" }}><Icon d={Icons.trending} size={18} color={s.color} /></div>
+              <Sparkline data={s.spark} color={s.color} />
+            </div>
+            <p className="text-2xl font-black text-slate-800">{s.value}</p>
+            <p className="text-sm font-semibold text-slate-600 mt-0.5">{s.label}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+            <h3 className="font-bold text-slate-800">Transaksi Terbaru</h3>
+            <button onClick={() => setPage("transaksi")} className="text-xs text-blue-600 font-semibold hover:underline">Lihat Semua →</button>
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-50 bg-slate-50">
+              <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">ID</th>
+              <th className="text-left px-3 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Barang</th>
+              <th className="text-left px-3 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Tipe</th>
+              <th className="text-right px-3 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Jml</th>
+              <th className="text-left px-3 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Tgl</th>
+              <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">SPK</th>
+            </tr></thead>
+            <tbody>
+              {transaksi.slice(0, 6).map(t => (
+                <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                  <td className="px-5 py-3 font-mono text-xs text-slate-400">{t.id}</td>
+                  <td className="px-3 py-3 font-semibold text-slate-800 max-w-40 truncate">{t.barang}</td>
+                  <td className="px-3 py-3"><Badge label={t.tipe} type={t.tipe} /></td>
+                  <td className="px-3 py-3 text-right font-bold text-slate-700">{t.jumlah}</td>
+                  <td className="px-3 py-3 text-xs text-slate-500">{t.tanggal}</td>
+                  <td className="px-5 py-3 font-mono text-xs text-blue-600 max-w-36 truncate">{t.no_spk}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 className="font-bold text-slate-800 mb-4">Stok per Gudang</h3>
+            {gudangList.map((g, idx) => {
+              const cnt = barang.filter(b => b.gudang === g).reduce((a, b) => a + b.stok, 0);
+              const pct = Math.round((cnt / (totalStok || 1)) * 100);
+              return (
+                <div key={g} className="mb-3 last:mb-0">
+                  <div className="flex justify-between text-xs mb-1"><span className="font-medium text-slate-600 truncate max-w-32">{g.split("–")[0].trim()}</span><span className="font-bold text-slate-500">{pct}%</span></div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${["bg-blue-500","bg-emerald-500","bg-amber-500","bg-purple-500"][idx]}`} style={{ width: `${pct}%`, transition: "width .6s" }} /></div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 className="font-bold text-slate-800 mb-3">Per Kategori</h3>
+            {kategoriList.map(k => {
+              const count = barang.filter(b => b.kategori === k).length;
+              if (!count) return null;
+              return <div key={k} className="flex justify-between py-2 border-b border-slate-50 last:border-0"><span className="text-sm text-slate-600">{k}</span><span className="text-sm font-bold text-slate-800">{count} jenis</span></div>;
+            })}
+          </div>
+        </div>
+      </div>
+
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-red-50"><h3 className="font-bold text-red-700">Item Perlu Restock Segera</h3></div>
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.min(alerts.length, 3)}, 1fr)` }}>
+            {alerts.map((b, i) => (
+              <div key={b.id} className={`p-5 ${i < alerts.length - 1 ? "border-r border-red-50" : ""}`}>
+                <div className="flex justify-between items-start">
+                  <div><p className="font-bold text-slate-800">{b.nama}</p><p className="text-xs font-mono text-slate-400 mt-0.5">{b.kode}</p><p className="text-xs text-slate-500 mt-1">{b.gudang}</p></div>
+                  <div className="text-right"><p className="text-3xl font-black text-red-600">{b.stok}</p><p className="text-xs text-slate-400">{b.satuan}</p><p className="text-xs text-slate-400">min {b.stokMin}</p></div>
+                </div>
+                <div className="mt-3 h-1.5 bg-red-100 rounded-full"><div className="h-full bg-red-400 rounded-full" style={{ width: `${Math.min(100, (b.stok / b.stokMin) * 100)}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DesktopBarang({ barang, setBarang }) {
+  const [search, setSearch] = useState("");
+  const [filterKat, setFilterKat] = useState("");
+  const [filterGudang, setFilterGudang] = useState("");
+  const [view, setView] = useState("table");
+  const [selected, setSelected] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showQR, setShowQR] = useState(null);
+  const [form, setForm] = useState({ nama: "", kategori: "", satuan: "", stok: "", stokMin: "", gudang: "", harga: "" });
+  const filtered = barang.filter(b => (b.nama.toLowerCase().includes(search.toLowerCase()) || b.kode.includes(search)) && (filterKat ? b.kategori === filterKat : true) && (filterGudang ? b.gudang === filterGudang : true));
+  const genKode = kat => `PJU.${{"Elektronik":"5.2.6","Material Konstruksi":"5.2.3","ATK":"5.2.1","Alat Berat":"5.2.2","Mebel & Perabot":"5.2.4","Keselamatan Kerja":"5.2.5"}[kat]||"5.2.9"}.01.${String(barang.length + 1).padStart(3, "0")}`;
+
+  const handleSubmit = () => {
+    if (!form.nama || !form.kategori) return;
+    setBarang([...barang, { id: `PJU-2024-${String(barang.length + 1).padStart(3, "0")}`, kode: genKode(form.kategori), nama: form.nama, kategori: form.kategori, satuan: form.satuan || "Unit", stok: +form.stok || 0, stokMin: +form.stokMin || 10, gudang: form.gudang || gudangList[0], harga: +form.harga || 0 }]);
+    setShowModal(false); setForm({ nama: "", kategori: "", satuan: "", stok: "", stokMin: "", gudang: "", harga: "" });
+  };
+
+  return (
+    <div className="flex gap-4 h-full min-h-0">
+      <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex items-center justify-between">
+          <div><h1 className="text-2xl font-black text-slate-800">Manajemen Barang</h1><p className="text-sm text-slate-500">{filtered.length} dari {barang.length} barang</p></div>
+          <div className="flex gap-2">
+            <button onClick={() => setView(v => v === "table" ? "grid" : "table")} className="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 bg-white transition-colors"><Icon d={view === "table" ? Icons.grid : Icons.list} size={18} /></button>
+            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"><Icon d={Icons.plus} size={16} />Tambah Barang</button>
+          </div>
+        </div>
+        <div className="flex gap-2 bg-white border border-slate-100 rounded-xl p-3 shadow-sm">
+          <div className="flex-1 relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon d={Icons.search} size={15} /></div><input className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="Cari nama atau kode barang..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <select className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 cursor-pointer" value={filterKat} onChange={e => setFilterKat(e.target.value)}><option value="">Semua Kategori</option>{kategoriList.map(k => <option key={k}>{k}</option>)}</select>
+          <select className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 cursor-pointer" value={filterGudang} onChange={e => setFilterGudang(e.target.value)}><option value="">Semua Gudang</option>{gudangList.map(g => <option key={g}>{g}</option>)}</select>
+          <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 bg-white transition-colors"><Icon d={Icons.download} size={15} />Export</button>
+        </div>
+
+        {view === "table" ? (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-slate-50 border-b border-slate-100">
+                {["Kode Aset", "Nama Barang", "Kategori", "Gudang", "Stok", "Harga Satuan", "Nilai Total", "Aksi"].map(h => <th key={h} className={`${h === "Stok" || h === "Harga Satuan" || h === "Nilai Total" ? "text-right" : "text-left"} px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider`}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {filtered.map(b => {
+                  const isAlert = b.stok <= b.stokMin;
+                  return (
+                    <tr key={b.id} onClick={() => setSelected(selected?.id === b.id ? null : b)} className={`border-b border-slate-50 cursor-pointer transition-colors ${selected?.id === b.id ? "bg-blue-50" : "hover:bg-slate-50"}`}>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{b.kode}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">{b.nama}</td>
+                      <td className="px-4 py-3"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">{b.kategori}</span></td>
+                      <td className="px-4 py-3 text-sm text-slate-500">{b.gudang.split("–")[0].trim()}</td>
+                      <td className="px-4 py-3 text-right"><span className={`font-black text-base ${isAlert ? "text-red-600" : "text-slate-800"}`}>{b.stok}</span><span className="text-xs text-slate-400 ml-1">{b.satuan}</span>{isAlert && <div className="text-xs text-red-500 font-semibold">⚠ Rendah</div>}</td>
+                      <td className="px-4 py-3 text-right text-sm text-slate-600">{b.harga.toLocaleString("id")}</td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-slate-700">{(b.stok * b.harga / 1e6).toFixed(1)}M</td>
+                      <td className="px-4 py-3"><div className="flex gap-1.5 justify-end" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setShowQR(b)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><Icon d={Icons.qr} size={14} /></button>
+                        <button className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-400 transition-colors"><Icon d={Icons.edit} size={14} /></button>
+                        <button className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"><Icon d={Icons.trash} size={14} /></button>
+                      </div></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot><tr className="bg-slate-50 border-t border-slate-100">
+                <td colSpan={6} className="px-4 py-3 text-xs font-bold text-slate-500 uppercase">Total Nilai</td>
+                <td className="px-4 py-3 text-right font-black text-slate-800">Rp {(filtered.reduce((a, b) => a + b.stok * b.harga, 0) / 1e6).toFixed(1)}M</td>
+                <td />
+              </tr></tfoot>
+            </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {filtered.map(b => {
+              const isAlert = b.stok <= b.stokMin;
+              return (
+                <div key={b.id} onClick={() => setSelected(selected?.id === b.id ? null : b)} className={`bg-white rounded-2xl border shadow-sm p-4 cursor-pointer hover:shadow-md transition-all ${isAlert ? "border-red-200" : "border-slate-100"} ${selected?.id === b.id ? "ring-2 ring-blue-400" : ""}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isAlert ? "bg-red-100" : "bg-blue-50"}`}><Icon d={Icons.box} size={18} color={isAlert ? "#ef4444" : "#3b82f6"} /></div>
+                    {isAlert && <Badge label="Stok Rendah" type="alert" />}
+                  </div>
+                  <p className="font-bold text-slate-800 text-sm">{b.nama}</p>
+                  <p className="text-xs font-mono text-slate-400 mt-0.5">{b.kode}</p>
+                  <div className="flex items-end justify-between mt-3 pt-3 border-t border-slate-50">
+                    <div><p className={`text-2xl font-black ${isAlert ? "text-red-600" : "text-slate-800"}`}>{b.stok}</p><p className="text-xs text-slate-400">{b.satuan}</p></div>
+                    <div className="text-right"><p className="text-xs text-slate-500">{b.gudang.split("–")[0].trim()}</p><p className="text-xs font-semibold text-slate-600">{(b.harga / 1000).toFixed(0)}K/unit</p></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {selected && (
+        <div className="w-72 flex-shrink-0 space-y-3" style={{ animation: "slideIn .15s ease" }}>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-slate-800 text-sm">Detail Barang</h3><button onClick={() => setSelected(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><Icon d={Icons.close} size={14} /></button></div>
+            <div className="w-full aspect-square bg-slate-50 rounded-xl flex items-center justify-center mb-4"><Icon d={Icons.box} size={48} color="#cbd5e1" /></div>
+            <p className="font-bold text-slate-800">{selected.nama}</p>
+            <p className="text-xs font-mono text-slate-400 mt-0.5 mb-4">{selected.kode}</p>
+            {[["Kategori", selected.kategori], ["Gudang", selected.gudang], ["Stok", `${selected.stok} ${selected.satuan}`], ["Minimum", `${selected.stokMin} ${selected.satuan}`], ["Harga", `Rp ${selected.harga.toLocaleString("id")}`], ["Nilai", `Rp ${(selected.stok * selected.harga / 1e6).toFixed(2)}M`]].map(([k, v]) => (
+              <div key={k} className="flex justify-between py-2 border-b border-slate-50 last:border-0"><span className="text-xs text-slate-400">{k}</span><span className="text-xs font-semibold text-slate-800 text-right max-w-36">{v}</span></div>
+            ))}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setShowQR(selected)} className="flex-1 py-2 text-xs font-semibold border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">QR Code</button>
+              <button className="flex-1 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Edit</button>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Status Stok</h4>
+            <div className="flex items-end gap-2 mb-2">
+              <span className={`text-3xl font-black ${selected.stok <= selected.stokMin ? "text-red-600" : "text-emerald-600"}`}>{Math.round((selected.stok / selected.stokMin) * 100)}%</span>
+              <span className="text-sm text-slate-400 mb-1">dari minimum</span>
+            </div>
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${selected.stok <= selected.stokMin ? "bg-red-400" : "bg-emerald-400"}`} style={{ width: `${Math.min(100, (selected.stok / selected.stokMin) * 100)}%` }} /></div>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <Modal title="Tambah Barang Baru" onClose={() => setShowModal(false)}>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2"><Field label="Nama Barang *"><input className={inputCls} placeholder="cth. Lampu LED Jalan 150W" value={form.nama} onChange={e => setForm({ ...form, nama: e.target.value })} /></Field></div>
+            <Field label="Kategori *"><select className={inputCls + " cursor-pointer"} value={form.kategori} onChange={e => setForm({ ...form, kategori: e.target.value })}><option value="">Pilih...</option>{kategoriList.map(k => <option key={k}>{k}</option>)}</select></Field>
+            <Field label="Satuan"><select className={inputCls + " cursor-pointer"} value={form.satuan} onChange={e => setForm({ ...form, satuan: e.target.value })}><option value="">Pilih...</option>{satuanList.map(s => <option key={s}>{s}</option>)}</select></Field>
+            <Field label="Stok Awal"><input type="number" className={inputCls} placeholder="0" value={form.stok} onChange={e => setForm({ ...form, stok: e.target.value })} /></Field>
+            <Field label="Stok Minimum"><input type="number" className={inputCls} placeholder="10" value={form.stokMin} onChange={e => setForm({ ...form, stokMin: e.target.value })} /></Field>
+            <div className="col-span-2"><Field label="Gudang"><select className={inputCls + " cursor-pointer"} value={form.gudang} onChange={e => setForm({ ...form, gudang: e.target.value })}><option value="">Pilih...</option>{gudangList.map(g => <option key={g}>{g}</option>)}</select></Field></div>
+            <div className="col-span-2"><Field label="Harga Satuan (Rp)"><input type="number" className={inputCls} placeholder="0" value={form.harga} onChange={e => setForm({ ...form, harga: e.target.value })} /></Field></div>
+          </div>
+          {form.kategori && <div className="bg-blue-50 rounded-xl p-3 mb-3"><p className="text-xs text-blue-600 font-semibold">Kode Otomatis (Permendagri):</p><p className="text-sm font-mono font-bold text-blue-800">{genKode(form.kategori)}</p></div>}
+          <div className="flex gap-2 pt-2"><button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button><button onClick={handleSubmit} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Simpan</button></div>
+        </Modal>
+      )}
+      {showQR && (
+        <Modal title={`QR Code — ${showQR.nama}`} onClose={() => setShowQR(null)} width="max-w-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl"><QRCodeSVG value={`PUPKP|${showQR.kode}|${showQR.nama}`} size={160} /></div>
+            <div className="w-full bg-slate-50 rounded-xl p-3 text-center space-y-1"><p className="font-mono font-bold text-slate-800">{showQR.kode}</p><p className="text-xs text-slate-500">{showQR.nama}</p><p className="text-xs text-slate-500">{showQR.gudang}</p></div>
+            <div className="flex gap-2 w-full">
+              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700"><Icon d={Icons.download} size={15} />Unduh PNG</button>
+              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-700 text-white rounded-xl text-sm font-semibold hover:bg-slate-800"><Icon d={Icons.download} size={15} />Cetak Label</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function DesktopTransaksi({ barang, transaksi, setTransaksi }) {
+  const [tab, setTab] = useState("semua");
+  const [showModal, setShowModal] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState({ tipe: "masuk", barang: "", jumlah: "", gudang: "", gudangTujuan: "", no_spk: "", keterangan: "" });
+  const filtered = transaksi.filter(t => tab === "semua" ? true : t.tipe === tab);
+  const sum = { masuk: transaksi.filter(t => t.tipe === "masuk").reduce((a, t) => a + t.jumlah, 0), keluar: transaksi.filter(t => t.tipe === "keluar").reduce((a, t) => a + t.jumlah, 0), mutasi: transaksi.filter(t => t.tipe === "mutasi").reduce((a, t) => a + t.jumlah, 0) };
+  const handleSubmit = () => {
+    if (!form.barang || !form.jumlah) return;
+    setTransaksi([{ id: `TRX-2024-${String(transaksi.length + 119).padStart(4, "0")}`, tipe: form.tipe, barang: form.barang, kode: barang.find(b => b.nama === form.barang)?.kode || "-", jumlah: +form.jumlah, gudang: form.tipe === "mutasi" ? `${form.gudang} → ${form.gudangTujuan}` : form.gudang, tanggal: new Date().toISOString().split("T")[0], no_spk: form.no_spk, keterangan: form.keterangan }, ...transaksi]);
+    setShowModal(false); setForm({ tipe: "masuk", barang: "", jumlah: "", gudang: "", gudangTujuan: "", no_spk: "", keterangan: "" });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-black text-slate-800">Transaksi</h1><p className="text-sm text-slate-500">{filtered.length} transaksi</p></div>
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"><Icon d={Icons.plus} size={16} />Input Transaksi</button>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        {[{ l: "Total Masuk", v: sum.masuk, c: "emerald", t: "masuk" }, { l: "Total Keluar", v: sum.keluar, c: "red", t: "keluar" }, { l: "Total Mutasi", v: sum.mutasi, c: "amber", t: "mutasi" }].map(s => (
+          <div key={s.t} onClick={() => setTab(tab === s.t ? "semua" : s.t)} className={`bg-${s.c}-50 border border-${s.c}-100 rounded-2xl p-5 cursor-pointer hover:shadow-sm transition-all ${tab === s.t ? "ring-2 ring-offset-1 ring-blue-400" : ""}`}>
+            <p className={`text-3xl font-black text-${s.c}-600`}>{s.v}</p>
+            <p className="text-sm font-semibold text-slate-600 mt-1">{s.l}</p>
+            <p className="text-xs text-slate-400 mt-0.5">unit / item</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-4">
+        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex gap-1 px-4 pt-4">
+            {["semua", "masuk", "keluar", "mutasi"].map(t => <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm font-semibold rounded-t-xl capitalize transition-colors ${tab === t ? "bg-slate-100 text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>{t}</button>)}
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="bg-slate-50 border-y border-slate-100">
+              {["ID", "Barang", "Tipe", "Gudang", "Jml", "Tanggal", "No. SPK"].map((h, i) => <th key={h} className={`${i >= 4 && i <= 4 ? "text-right" : "text-left"} px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider`}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {filtered.map(t => (
+                <tr key={t.id} onClick={() => setSelected(selected?.id === t.id ? null : t)} className={`border-b border-slate-50 cursor-pointer transition-colors ${selected?.id === t.id ? "bg-blue-50" : "hover:bg-slate-50"}`}>
+                  <td className="px-4 py-3 font-mono text-xs text-slate-400">{t.id}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-800 max-w-40 truncate">{t.barang}</td>
+                  <td className="px-4 py-3"><Badge label={t.tipe} type={t.tipe} /></td>
+                  <td className="px-4 py-3 text-xs text-slate-500 max-w-36 truncate">{t.gudang}</td>
+                  <td className="px-4 py-3 text-right font-black text-slate-800">{t.jumlah}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{t.tanggal}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-blue-600 max-w-36 truncate">{t.no_spk}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {selected && (
+          <div className="w-60 flex-shrink-0 bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3" style={{ animation: "slideIn .15s ease" }}>
+            <div className="flex justify-between items-center"><h3 className="font-bold text-slate-800 text-sm">Detail</h3><button onClick={() => setSelected(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"><Icon d={Icons.close} size={14} /></button></div>
+            <div className={`py-4 rounded-xl flex flex-col items-center justify-center ${selected.tipe === "masuk" ? "bg-emerald-50" : selected.tipe === "keluar" ? "bg-red-50" : "bg-amber-50"}`}>
+              <p className={`text-4xl font-black ${selected.tipe === "masuk" ? "text-emerald-600" : selected.tipe === "keluar" ? "text-red-600" : "text-amber-600"}`}>{selected.jumlah}</p>
+              <p className="text-sm text-slate-500">unit</p>
+              <div className="mt-1"><Badge label={selected.tipe} type={selected.tipe} /></div>
+            </div>
+            {[["ID", selected.id], ["Barang", selected.barang], ["Gudang", selected.gudang], ["Tanggal", selected.tanggal], ["No. SPK", selected.no_spk], ["Keterangan", selected.keterangan]].map(([k, v]) => (
+              <div key={k} className="flex justify-between py-1.5 border-b border-slate-50 last:border-0"><span className="text-xs text-slate-400">{k}</span><span className="text-xs font-semibold text-slate-700 text-right max-w-32 break-all">{v || "-"}</span></div>
+            ))}
+          </div>
+        )}
+      </div>
+      {showModal && (
+        <Modal title="Input Transaksi Baru" onClose={() => setShowModal(false)}>
+          <div className="flex bg-slate-100 rounded-xl p-1 gap-1 mb-4">
+            {["masuk", "keluar", "mutasi"].map(t => <button key={t} onClick={() => setForm({ ...form, tipe: t })} className={`flex-1 py-2 text-sm font-bold rounded-lg capitalize transition-all ${form.tipe === t ? "bg-white shadow-sm text-blue-600" : "text-slate-500"}`}>{t === "masuk" ? "Barang Masuk" : t === "keluar" ? "Barang Keluar" : "Mutasi"}</button>)}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2"><Field label="Nama Barang *"><select className={inputCls + " cursor-pointer"} value={form.barang} onChange={e => setForm({ ...form, barang: e.target.value })}><option value="">Pilih barang...</option>{barang.map(b => <option key={b.id}>{b.nama}</option>)}</select></Field></div>
+            <Field label="Jumlah *"><input type="number" className={inputCls} placeholder="0" value={form.jumlah} onChange={e => setForm({ ...form, jumlah: e.target.value })} /></Field>
+            <Field label={form.tipe === "mutasi" ? "Gudang Asal" : "Gudang"}><select className={inputCls + " cursor-pointer"} value={form.gudang} onChange={e => setForm({ ...form, gudang: e.target.value })}><option value="">Pilih...</option>{gudangList.map(g => <option key={g}>{g}</option>)}</select></Field>
+            {form.tipe === "mutasi" && <div className="col-span-2"><Field label="Gudang Tujuan"><select className={inputCls + " cursor-pointer"} value={form.gudangTujuan} onChange={e => setForm({ ...form, gudangTujuan: e.target.value })}><option value="">Pilih...</option>{gudangList.map(g => <option key={g}>{g}</option>)}</select></Field></div>}
+            <div className="col-span-2"><Field label="No. SPK"><input className={inputCls} placeholder="SPK/PUPKP/2024/xxxx" value={form.no_spk} onChange={e => setForm({ ...form, no_spk: e.target.value })} /></Field></div>
+            <div className="col-span-2"><Field label="Keterangan"><textarea className={inputCls} rows={2} value={form.keterangan} onChange={e => setForm({ ...form, keterangan: e.target.value })} /></Field></div>
+          </div>
+          <div className="flex gap-2 pt-2"><button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button><button onClick={handleSubmit} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Simpan</button></div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function DesktopLaporan({ barang, transaksi }) {
+  const [bulan, setBulan] = useState("7");
+  const [gen, setGen] = useState(null);
+  const nilaiTotal = barang.reduce((a, b) => a + b.stok * b.harga, 0);
+  const bNama = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-black text-slate-800">Laporan</h1><p className="text-sm text-slate-500">Export untuk keperluan SPJ & pelaporan dinas</p></div>
+        <div className="flex gap-2">
+          <select className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer" value={bulan} onChange={e => setBulan(e.target.value)}>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{bNama[i + 1]}</option>)}</select>
+          <select className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"><option>2024</option><option>2023</option></select>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 grid grid-cols-2 gap-3">
+          {[{ l: "Barang Masuk", v: transaksi.filter(t => t.tipe === "masuk").reduce((a, t) => a + t.jumlah, 0), c: "emerald" }, { l: "Barang Keluar", v: transaksi.filter(t => t.tipe === "keluar").reduce((a, t) => a + t.jumlah, 0), c: "red" }, { l: "Mutasi", v: transaksi.filter(t => t.tipe === "mutasi").reduce((a, t) => a + t.jumlah, 0), c: "amber" }, { l: "Total Transaksi", v: transaksi.length, c: "blue" }].map(s => (
+            <div key={s.l} className={`bg-${s.c}-50 border border-${s.c}-100 rounded-2xl p-5`}><p className={`text-3xl font-black text-${s.c}-600`}>{s.v}</p><p className="text-sm font-semibold text-slate-600 mt-1">{s.l}</p><p className="text-xs text-slate-400 mt-0.5">{bNama[bulan]} 2024</p></div>
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+          <h3 className="font-bold text-slate-800">Export Laporan</h3>
+          <p className="text-xs text-slate-500">{bNama[bulan]} 2024</p>
+          {[{ l: "Export PDF", sub: "Siap cetak & SPJ", c: "bg-red-600 hover:bg-red-700", t: "pdf" }, { l: "Export Excel", sub: "Data untuk analisis", c: "bg-emerald-600 hover:bg-emerald-700", t: "excel" }, { l: "Rekap Stok", sub: "Posisi stok terkini", c: "bg-blue-600 hover:bg-blue-700", t: "stok" }].map(btn => (
+            <button key={btn.t} onClick={() => { setGen(btn.t); setTimeout(() => setGen(null), 2000); }} className={`w-full flex items-center justify-between ${btn.c} text-white rounded-xl px-4 py-3 text-sm font-semibold transition-colors shadow-sm`}>
+              <div className="text-left"><p className="font-bold">{gen === btn.t ? "Menyiapkan..." : btn.l}</p><p className="text-white/70 text-xs">{btn.sub}</p></div>
+              {gen === btn.t ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Icon d={Icons.download} size={16} color="white" />}
+            </button>
+          ))}
+          <div className="pt-2 border-t border-slate-50"><div className="flex justify-between"><span className="text-xs text-slate-500">Nilai Inventaris</span><span className="text-sm font-black text-slate-800">Rp {(nilaiTotal / 1e9).toFixed(2)}M</span></div></div>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-50 flex justify-between"><h3 className="font-bold text-slate-800">Posisi Stok Akhir — {bNama[bulan]} 2024</h3><span className="text-xs text-slate-400">{barang.length} item</span></div>
+        <table className="w-full text-sm">
+          <thead><tr className="bg-slate-50 border-b border-slate-100">
+            {["Kode Aset", "Nama Barang", "Kategori", "Gudang", "Stok", "Harga Satuan", "Nilai (Rp)", "Status"].map(h => <th key={h} className={`${h === "Stok" || h === "Harga Satuan" || h === "Nilai (Rp)" ? "text-right" : h === "Status" ? "text-center" : "text-left"} px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider`}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {barang.map((b, i) => (
+              <tr key={b.id} className={`border-b border-slate-50 ${i % 2 === 1 ? "bg-slate-50/40" : ""}`}>
+                <td className="px-4 py-3 font-mono text-xs text-slate-400">{b.kode}</td>
+                <td className="px-4 py-3 font-semibold text-slate-800">{b.nama}</td>
+                <td className="px-4 py-3 text-xs text-slate-600">{b.kategori}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">{b.gudang.split("–")[0].trim()}</td>
+                <td className="px-4 py-3 text-right font-bold text-slate-800">{b.stok} {b.satuan}</td>
+                <td className="px-4 py-3 text-right text-xs text-slate-600">{b.harga.toLocaleString("id")}</td>
+                <td className="px-4 py-3 text-right font-semibold text-slate-700">{(b.stok * b.harga / 1e6).toFixed(2)}M</td>
+                <td className="px-4 py-3 text-center"><Badge label={b.stok <= b.stokMin ? "Alert" : "Normal"} type={b.stok <= b.stokMin ? "alert" : "ok"} /></td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot><tr className="bg-slate-50 border-t border-slate-200">
+            <td colSpan={6} className="px-4 py-3.5 text-sm font-bold text-slate-600">TOTAL NILAI INVENTARIS</td>
+            <td className="px-4 py-3.5 text-right text-base font-black text-slate-800">Rp {(nilaiTotal / 1e6).toFixed(2)}M</td>
+            <td />
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// MOBILE PAGES
+// ──────────────────────────────────────────────────────────────────────────────
+function MobileDashboard({ barang, transaksi }) {
+  const alerts = barang.filter(b => b.stok <= b.stokMin);
+  const totalStok = barang.reduce((a, b) => a + b.stok, 0);
+  const nilaiTotal = barang.reduce((a, b) => a + b.stok * b.harga, 0);
+  return (
+    <div className="space-y-4">
+      <div><h1 className="text-xl font-black text-slate-800">Dashboard</h1><p className="text-xs text-slate-500 mt-0.5">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p></div>
+      {alerts.length > 0 && <div className="flex gap-2 bg-red-50 border border-red-200 rounded-xl p-3 items-start"><Icon d={Icons.alert} size={15} color="#ef4444" /><p className="text-xs font-semibold text-red-700 flex-1">Stok minimum: {alerts.map(a => a.nama).join(", ")}</p></div>}
+      <div className="grid grid-cols-2 gap-2.5">
+        {[{ l: "Jenis Barang", v: barang.length }, { l: "Total Stok", v: totalStok.toLocaleString("id") }, { l: "Alert Stok", v: alerts.length }, { l: "Nilai Aset", v: `Rp ${(nilaiTotal / 1e9).toFixed(1)}M` }].map(s => (
+          <div key={s.l} className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm"><p className="text-2xl font-black text-slate-800">{s.v}</p><p className="text-xs text-slate-500 mt-0.5">{s.l}</p></div>
+        ))}
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="px-4 pt-4 pb-2 border-b border-slate-50"><p className="text-sm font-bold text-slate-800">Aktivitas Terbaru</p></div>
+        {transaksi.slice(0, 4).map(t => (
+          <div key={t.id} className="flex items-center gap-3 px-4 py-3 border-b border-slate-50 last:border-0">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${t.tipe === "masuk" ? "bg-emerald-100" : t.tipe === "keluar" ? "bg-red-100" : "bg-amber-100"}`}><Icon d={Icons.transaksi} size={14} color={t.tipe === "masuk" ? "#10b981" : t.tipe === "keluar" ? "#ef4444" : "#f59e0b"} /></div>
+            <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{t.barang}</p><p className="text-xs text-slate-400">{t.tanggal}</p></div>
+            <div className="text-right"><Badge label={t.tipe} type={t.tipe} /><p className="text-xs text-slate-500 mt-0.5">{t.jumlah} unit</p></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MobileBarang({ barang, setBarang }) {
+  const [search, setSearch] = useState("");
+  const [showQR, setShowQR] = useState(null);
+  const filtered = barang.filter(b => b.nama.toLowerCase().includes(search.toLowerCase()) || b.kode.includes(search));
+  return (
+    <div className="space-y-3">
+      <h1 className="text-xl font-black text-slate-800">Barang</h1>
+      <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon d={Icons.search} size={15} /></div><input className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cari barang..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+      {filtered.map(b => (
+        <div key={b.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${b.stok <= b.stokMin ? "border-red-200" : "border-slate-100"}`}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0"><p className="font-bold text-slate-800 text-sm truncate">{b.nama}</p><p className="text-xs font-mono text-slate-400 mt-0.5">{b.kode}</p><div className="flex gap-1 mt-1.5"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{b.kategori}</span>{b.stok <= b.stokMin && <Badge label="Stok Rendah" type="alert" />}</div></div>
+            <div className="text-right ml-2 flex-shrink-0"><p className="text-2xl font-black text-slate-800">{b.stok}</p><p className="text-xs text-slate-400">{b.satuan}</p></div>
+          </div>
+          <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50">
+            <button onClick={() => setShowQR(b)} className="flex-1 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg py-2 transition-colors">QR Code</button>
+            <button className="flex-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg py-2 transition-colors">Edit</button>
+          </div>
+        </div>
+      ))}
+      {showQR && <Modal title={`QR — ${showQR.nama}`} onClose={() => setShowQR(null)} width="max-w-xs"><div className="flex flex-col items-center gap-3"><div className="p-3 border-2 border-slate-200 rounded-xl"><QRCodeSVG value={`PUPKP|${showQR.kode}|${showQR.nama}`} size={140} /></div><p className="font-mono text-sm font-bold text-slate-800">{showQR.kode}</p></div></Modal>}
+    </div>
+  );
+}
+
+function MobileScan({ barang }) {
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState(null);
+  const scan = () => { setScanning(true); setTimeout(() => { setResult(barang[Math.floor(Math.random() * barang.length)]); setScanning(false); }, 1800); };
+  return (
+    <div className="space-y-4">
+      <h1 className="text-xl font-black text-slate-800">Scan QR</h1>
+      <div className="bg-slate-900 rounded-2xl overflow-hidden relative" style={{ aspectRatio: "1" }}>
+        <div className="absolute inset-0 flex items-center justify-center">{scanning ? <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" /> : <Icon d={Icons.camera} size={48} color="rgba(255,255,255,0.2)" />}</div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-44 h-44 relative">{["top-0 left-0 border-t-4 border-l-4 rounded-tl-lg", "top-0 right-0 border-t-4 border-r-4 rounded-tr-lg", "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-lg", "bottom-0 right-0 border-b-4 border-r-4 rounded-br-lg"].map((cls, i) => <div key={i} className={`absolute w-8 h-8 border-blue-400 ${cls}`} />)}</div></div>
+      </div>
+      <button onClick={scan} disabled={scanning} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"><Icon d={Icons.camera} size={18} />{scanning ? "Memindai..." : "Aktifkan Kamera"}</button>
+      {result && <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4"><div className="flex items-center gap-2 mb-3"><div className="w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center"><Icon d={Icons.check} size={14} color="#10b981" /></div><p className="text-sm font-bold text-emerald-700">Ditemukan!</p></div>{[["Nama", result.nama], ["Kode", result.kode], ["Kategori", result.kategori], ["Gudang", result.gudang]].map(([k, v]) => <div key={k} className="flex justify-between py-1.5 border-b border-emerald-100 last:border-0"><span className="text-xs text-slate-500">{k}</span><span className="text-xs font-bold text-slate-800 text-right max-w-40">{v}</span></div>)}<div className="flex justify-between items-center pt-2"><span className="text-xs text-slate-500">Stok</span><span className={`text-2xl font-black ${result.stok <= result.stokMin ? "text-red-600" : "text-emerald-600"}`}>{result.stok} <span className="text-sm">{result.satuan}</span></span></div></div>}
+    </div>
+  );
+}
+
+function MobileTransaksi({ barang, transaksi, setTransaksi }) {
+  const [tab, setTab] = useState("semua");
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ tipe: "masuk", barang: "", jumlah: "", gudang: "", no_spk: "" });
+  const filtered = transaksi.filter(t => tab === "semua" ? true : t.tipe === tab);
+  const handleSubmit = () => {
+    if (!form.barang || !form.jumlah) return;
+    setTransaksi([{ id: `TRX-2024-${String(transaksi.length + 119).padStart(4, "0")}`, tipe: form.tipe, barang: form.barang, kode: "-", jumlah: +form.jumlah, gudang: form.gudang, tanggal: new Date().toISOString().split("T")[0], no_spk: form.no_spk, keterangan: "" }, ...transaksi]);
+    setShowModal(false); setForm({ tipe: "masuk", barang: "", jumlah: "", gudang: "", no_spk: "" });
+  };
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-start"><h1 className="text-xl font-black text-slate-800">Transaksi</h1><button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold"><Icon d={Icons.plus} size={15} />Input</button></div>
+      <div className="flex bg-slate-100 rounded-xl p-1 gap-1">{["semua", "masuk", "keluar", "mutasi"].map(t => <button key={t} onClick={() => setTab(t)} className={`flex-1 text-xs font-bold py-2 rounded-lg capitalize transition-all ${tab === t ? "bg-white shadow-sm text-blue-600" : "text-slate-500"}`}>{t}</button>)}</div>
+      {filtered.map(t => <div key={t.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-start justify-between"><div className="flex-1 min-w-0"><p className="font-bold text-slate-800 text-sm">{t.barang}</p><p className="text-xs text-slate-400 mt-0.5">{t.tanggal}</p><p className="text-xs font-mono text-blue-600 mt-0.5">{t.no_spk}</p></div><div className="text-right ml-2 flex-shrink-0"><p className="text-2xl font-black text-slate-800">{t.jumlah}</p><Badge label={t.tipe} type={t.tipe} /></div></div></div>)}
+      {showModal && <Modal title="Input Transaksi" onClose={() => setShowModal(false)}>
+        <Field label="Tipe"><div className="flex gap-1">{["masuk", "keluar", "mutasi"].map(t => <button key={t} onClick={() => setForm({ ...form, tipe: t })} className={`flex-1 py-2 text-xs font-bold rounded-lg capitalize ${form.tipe === t ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>{t}</button>)}</div></Field>
+        <Field label="Barang *"><select className={inputCls + " cursor-pointer"} value={form.barang} onChange={e => setForm({ ...form, barang: e.target.value })}><option value="">Pilih...</option>{barang.map(b => <option key={b.id}>{b.nama}</option>)}</select></Field>
+        <div className="grid grid-cols-2 gap-2"><Field label="Jumlah *"><input type="number" className={inputCls} value={form.jumlah} onChange={e => setForm({ ...form, jumlah: e.target.value })} /></Field><Field label="Gudang"><select className={inputCls + " cursor-pointer"} value={form.gudang} onChange={e => setForm({ ...form, gudang: e.target.value })}><option value="">Pilih...</option>{gudangList.map(g => <option key={g}>{g}</option>)}</select></Field></div>
+        <Field label="No. SPK"><input className={inputCls} value={form.no_spk} onChange={e => setForm({ ...form, no_spk: e.target.value })} /></Field>
+        <div className="flex gap-2 pt-2"><button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600">Batal</button><button onClick={handleSubmit} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">Simpan</button></div>
+      </Modal>}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// NAV + ROOT
+// ──────────────────────────────────────────────────────────────────────────────
+const navItems = [
+  { key: "dashboard", label: "Dashboard", icon: Icons.dashboard },
+  { key: "barang", label: "Barang", icon: Icons.barang },
+  { key: "transaksi", label: "Transaksi", icon: Icons.transaksi },
+  { key: "qr", label: "QR Scan", icon: Icons.qr },
+  { key: "laporan", label: "Laporan", icon: Icons.laporan },
+];
+
+const desktopNavItems = [
+  ...navItems,
+  { key: "users", label: "Manajemen User", icon: Icons.users },
+];
+
+export default function App() {
+  const [page, setPage] = useState("dashboard");
+  const [collapsed, setCollapsed] = useState(false);
+  const [barang, setBarang] = useState([]);
+  const [transaksi, setTransaksi] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const session = await getSession();
+        if (!session) {
+          window.location.href = "/login";
+          return;
+        }
+        const [brg, trx] = await Promise.all([getBarang(), getTransaksi()]);
+        setBarang(brg.map(b => ({
+          id: b.id,
+          kode: b.kode_aset,
+          nama: b.nama,
+          kategori: b.kategori,
+          satuan: b.satuan,
+          stok: b.stok,
+          stokMin: b.stok_minimum,
+          gudang: b.gudang?.nama || '-',
+          harga: b.harga_satuan,
+        })));
+        setTransaksi(trx.map(t => ({
+          id: t.id,
+          tipe: t.tipe,
+          barang: t.barang?.nama || '-',
+          kode: t.barang?.kode_aset || '-',
+          jumlah: t.jumlah,
+          gudang: t.gudang_asal?.nama || '-',
+          tanggal: t.tanggal,
+          no_spk: t.no_spk || '-',
+          keterangan: t.keterangan || '',
+        })));
+      } catch (err) {
+        console.error('Error:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
+  }, []);
+
+  const alertCount = barang.filter(b => b.stok <= b.stokMin).length;
+
+  const desktopPages = {
+    dashboard: <DesktopDashboard barang={barang} transaksi={transaksi} setPage={setPage} />,
+    barang: <DesktopBarang barang={barang} setBarang={setBarang} />,
+    transaksi: <DesktopTransaksi barang={barang} transaksi={transaksi} setTransaksi={setTransaksi} />,
+    qr: <div className="flex items-center justify-center h-80 text-slate-400"><div className="text-center"><Icon d={Icons.camera} size={48} color="#e2e8f0" /><p className="mt-3 font-semibold text-slate-500">Fitur scan tersedia di aplikasi mobile</p><p className="text-sm mt-1 text-slate-400">Gunakan browser HP atau aplikasi Android</p></div></div>,
+    laporan: <DesktopLaporan barang={barang} transaksi={transaksi} />,
+    users: <UserManagement />,
+  };
+
+  const mobilePages = {
+    dashboard: <MobileDashboard barang={barang} transaksi={transaksi} />,
+    barang: <MobileBarang barang={barang} setBarang={setBarang} />,
+    transaksi: <MobileTransaksi barang={barang} transaksi={transaksi} setTransaksi={setTransaksi} />,
+    qr: <MobileScan barang={barang} />,
+    laporan: <DesktopLaporan barang={barang} transaksi={transaksi} />,
+  };
+  
+  if (loading) return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f1f5f9" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ width:40, height:40, border:"4px solid #3b82f6", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.8s linear infinite", margin:"0 auto" }} />
+        <p style={{ marginTop:12, color:"#64748b", fontWeight:600 }}>Memuat data inventaris...</p>
+      </div>
+    </div>
+  );
+  
+  const mobileStyle = { display: "var(--show-mobile, none)" };
+  const desktopStyle = { display: "var(--show-desktop, flex)" };
+  // CSS handles responsive — render both layouts
+  return (
+    <>
+
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;margin:0}@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}.layout-mobile{display:none}.layout-desktop{display:flex}@media(max-width:767px){.layout-mobile{display:block!important}.layout-desktop{display:none!important}}`}</style>
+      <div className="layout-mobile" style={{minHeight:"100vh",background:"#f8fafc"}}>
+        <div className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#1e40af,#3b82f6)" }}><Icon d={Icons.gudang} size={16} color="white" /></div>
+              <div><p className="text-sm font-black text-slate-800 leading-none">e-Inventory</p><p className="text-xs text-slate-400 leading-none mt-0.5">PUPKP Yogyakarta</p></div>
+            </div>
+            <div className="flex gap-1.5">
+              <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"><Icon d={Icons.bell} size={18} color="#64748b" />{alertCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">{alertCount}</span>}</button>
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center"><Icon d={Icons.user} size={15} color="#3b82f6" /></div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-5 pb-28">{mobilePages[page]}</div>
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-xl z-40">
+          <div className="flex px-1 py-2">
+            {navItems.map(n => {
+              const active = page === n.key;
+              return <button key={n.key} onClick={() => setPage(n.key)} className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl transition-all ${active ? "text-blue-600" : "text-slate-400"}`}>
+                <div className={`p-1.5 rounded-xl ${active ? "bg-blue-50" : ""}`}><Icon d={n.icon} size={17} color={active ? "#3b82f6" : "currentColor"} strokeWidth={active ? 2.2 : 1.8} /></div>
+                <span className="text-xs font-bold leading-none">{n.label}</span>
+              </button>;
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box}body{font-family:'Plus Jakarta Sans',sans-serif;background:#f1f5f9;margin:0}@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}`}</style>
+      <div className="layout-desktop" style={{height:"100vh",overflow:"hidden"}}>
+        {/* SIDEBAR */}
+        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-200 flex-shrink-0 ${collapsed ? "w-16" : "w-56"}`}>
+          <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-50">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#1e40af,#3b82f6)" }}><Icon d={Icons.gudang} size={16} color="white" /></div>
+            {!collapsed && <div className="min-w-0"><p className="text-sm font-black text-slate-800 leading-none">e-Inventory</p><p className="text-xs text-slate-400 mt-0.5 leading-none truncate">PUPKP Yogyakarta</p></div>}
+          </div>
+          <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+            {desktopNavItems.map(n => {
+              const active = page === n.key;
+              return <button key={n.key} onClick={() => setPage(n.key)} title={n.label} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${active ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"}`}>
+                <div className="flex-shrink-0"><Icon d={n.icon} size={18} color={active ? "#1d4ed8" : "currentColor"} strokeWidth={active ? 2.2 : 1.8} /></div>
+                {!collapsed && <span className="truncate flex-1">{n.label}</span>}
+                {!collapsed && n.key === "barang" && alertCount > 0 && <span className="text-xs bg-red-500 text-white font-black w-5 h-5 rounded-full flex items-center justify-center">{alertCount}</span>}
+              </button>;
+            })}
+          </nav>
+          <div className="border-t border-slate-50 p-2 space-y-0.5">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"><Icon d={Icons.settings} size={18} />{!collapsed && <span>Pengaturan</span>}</button>
+            <button onClick={async () => { await logout(); window.location.href = "/login"; }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Icon d={Icons.logout2} size={18} />{!collapsed && <span>Keluar</span>}</button>
+            <button onClick={() => setCollapsed(c => !c)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"><Icon d={Icons.collapse} size={18} style={{ transform: collapsed ? "rotate(180deg)" : "none" }} />{!collapsed && <span>Ciutkan</span>}</button>
+          </div>
+        </aside>
+
+        {/* MAIN */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <header className="bg-white border-b border-slate-100 flex items-center justify-between px-6 py-3 flex-shrink-0">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-slate-400">PUPKP Kota Yogyakarta</span>
+              <Icon d={Icons.arrow} size={14} color="#94a3b8" />
+              <span className="font-semibold text-slate-700 capitalize">{navItems.find(n => n.key === page)?.label}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon d={Icons.search} size={14} /></div><input className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 w-52" placeholder="Cari di seluruh sistem..." /></div>
+              <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"><Icon d={Icons.bell} size={18} color="#64748b" />{alertCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">{alertCount}</span>}</button>
+              <div className="flex items-center gap-2 pl-3 border-l border-slate-100">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center"><Icon d={Icons.user} size={16} color="#3b82f6" /></div>
+                {!collapsed && <div><p className="text-xs font-bold text-slate-700 leading-none">Admin PUPKP</p><p className="text-xs text-slate-400 leading-none mt-0.5">Administrator</p></div>}
+              </div>
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto p-6">{desktopPages[page]}</main>
+        </div>
+      </div>
+    </>
+    </>
+  );
+}

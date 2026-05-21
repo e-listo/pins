@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PINS</string>
+    <string name="title_activity_main">PINS</string>
+    <string name="package_name">id.go.jogjakota.pupkp.pins</string>
+    <string name="custom_url_scheme">id.go.jogjakota.pupkp.pins</string>
+</resources>
