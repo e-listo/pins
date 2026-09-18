@@ -1,0 +1,158 @@
+:root {
+  --primary: #1e6091;
+  --primary-dark: #14486b;
+  --danger: #c0392b;
+  --success: #1e8449;
+  --warning: #b9770e;
+  --bg: #f4f6f8;
+  --card-bg: #ffffff;
+  --text: #212529;
+  --text-muted: #6c757d;
+  --border: #dee2e6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.login-card h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+  color: var(--primary-dark);
+}
+.login-card p.subtitle {
+  color: var(--text-muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 14px 0 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 18px;
+}
+.btn-primary { background: var(--primary); color: #fff; width: 100%; margin-top: 20px; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: #e9ecef; color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-sm { padding: 8px 12px; font-size: 13px; }
+
+.error-msg { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 18px; }
+
+.app-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.app-header .title { font-weight: 700; font-size: 17px; }
+.app-header .user-info { font-size: 13px; text-align: right; }
+.app-header .user-info .role { opacity: 0.85; font-size: 11px; }
+
+.nav-tabs {
+  display: flex;
+  overflow-x: auto;
+  background: var(--primary-dark);
+}
+.nav-tabs a {
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.nav-tabs a.active { opacity: 1; border-bottom: 3px solid #fff; font-weight: 700; }
+
+.container { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+.card {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.stat-box { text-align: center; padding: 18px; }
+.stat-box .num { font-size: 28px; font-weight: 800; color: var(--primary-dark); }
+.stat-box .label { font-size: 13px; color: var(--text-muted); }
+.stat-box.alert .num { color: var(--danger); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+th { color: var(--text-muted); font-size: 12px; text-transform: uppercase; }
+tr:hover { background: #fafbfc; }
+
+.badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.badge-danger { background: #fdecea; color: var(--danger); }
+.badge-ok { background: #eafaf1; color: var(--success); }
+
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar input[type="search"] { flex: 1; min-width: 160px; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100;
+}
+.modal-overlay.open { display: flex; }
+.modal-box { background: #fff; border-radius: 12px; padding: 20px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+.modal-box h3 { margin-top: 0; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions button { flex: 1; }
+
+.hidden { display: none !important; }
+.text-muted { color: var(--text-muted); font-size: 13px; }
+.mt-16 { margin-top: 16px; }
+
+#qr-reader { width: 100%; max-width: 400px; margin: 0 auto; }

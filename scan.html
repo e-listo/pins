@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Scan QR - PINS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+<meta name="theme-color" content="#1e6091">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="title">PINS DPUPKP</div>
+    <div class="user-info">
+      <div id="user-name">-</div>
+      <div class="role" id="user-role">-</div>
+    </div>
+  </header>
+  <nav class="nav-tabs">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="barang.html">Barang</a>
+    <a href="transaksi.html">Transaksi</a>
+    <a href="scan.html" class="active">Scan QR</a>
+    <a href="#" id="logout-link">Keluar</a>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h3 style="margin-top:0;">Scan QR Code Aset</h3>
+      <p class="text-muted">Arahkan kamera ke label QR pada barang/aset untuk lihat info stok secara instan.</p>
+      <div id="qr-reader"></div>
+      <button class="btn-secondary mt-16" id="btn-manual" style="width:100%;">Atau Cari Manual Lewat Kode</button>
+    </div>
+
+    <div class="card hidden" id="hasil-scan">
+      <h3 style="margin-top:0;">Hasil</h3>
+      <table>
+        <tr><td class="text-muted">Kode Aset</td><td id="r-kode"></td></tr>
+        <tr><td class="text-muted">Nama</td><td id="r-nama"></td></tr>
+        <tr><td class="text-muted">Kategori</td><td id="r-kategori"></td></tr>
+        <tr><td class="text-muted">Stok</td><td id="r-stok"></td></tr>
+        <tr><td class="text-muted">Satuan</td><td id="r-satuan"></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+    renderHeaderUser();
+    terapkanBatasanRole();
+
+    document.getElementById("logout-link").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+
+    async function cariBarang(kode) {
+      try {
+        const b = await apiFetch(`/barang/scan/${encodeURIComponent(kode)}`);
+        document.getElementById("r-kode").textContent = b.kode_aset;
+        document.getElementById("r-nama").textContent = b.nama;
+        document.getElementById("r-kategori").textContent = b.kategori;
+        document.getElementById("r-stok").textContent = `${b.stok} ${b.satuan}`;
+        document.getElementById("r-satuan").textContent = b.satuan;
+        document.getElementById("hasil-scan").classList.remove("hidden");
+      } catch (err) {
+        alert("Barang tidak ditemukan: " + err.message);
+      }
+    }
+
+    let scannerAktif = false;
+    function mulaiScanner() {
+      if (scannerAktif) return;
+      scannerAktif = true;
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 220 },
+        (decodedText) => {
+          html5QrCode.stop();
+          scannerAktif = false;
+          try {
+            const payload = JSON.parse(decodedText);
+            cariBarang(payload.kode_aset || decodedText);
+          } catch {
+            cariBarang(decodedText);
+          }
+        },
+        () => {}
+      ).catch((err) => {
+        scannerAktif = false;
+        console.warn("Kamera tidak tersedia:", err);
+      });
+    }
+    mulaiScanner();
+
+    document.getElementById("btn-manual").addEventListener("click", () => {
+      const kode = prompt("Masukkan kode aset barang:");
+      if (kode) cariBarang(kode.trim());
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

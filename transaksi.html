@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Transaksi - PINS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+<meta name="theme-color" content="#1e6091">
+</head>
+<body>
+  <header class="app-header">
+    <div class="title">PINS DPUPKP</div>
+    <div class="user-info">
+      <div id="user-name">-</div>
+      <div class="role" id="user-role">-</div>
+    </div>
+  </header>
+  <nav class="nav-tabs">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="barang.html">Barang</a>
+    <a href="transaksi.html" class="active">Transaksi</a>
+    <a href="scan.html">Scan QR</a>
+    <a href="#" id="logout-link">Keluar</a>
+  </nav>
+
+  <div class="container">
+    <div class="toolbar">
+      <select id="filter-tipe">
+        <option value="">Semua Tipe</option>
+        <option value="masuk">Masuk</option>
+        <option value="keluar">Keluar</option>
+        <option value="mutasi">Mutasi</option>
+      </select>
+      <button class="btn-primary" style="width:auto;margin-top:0;" data-role="superadmin,Admin Gudang,Pengurus Barang Pembantu" id="btn-tambah">+ Input Transaksi</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>No. Transaksi</th><th>Tanggal</th><th>Tipe</th><th>Jumlah</th><th>Sisa Stok</th></tr>
+        </thead>
+        <tbody id="tabel-transaksi">
+          <tr><td colspan="5" class="text-muted">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-transaksi">
+    <div class="modal-box">
+      <h3>Input Transaksi Baru</h3>
+      <form id="form-transaksi">
+        <label>Tipe Transaksi</label>
+        <select id="f-tipe" required>
+          <option value="masuk">Masuk (barang datang)</option>
+          <option value="keluar">Keluar (barang dipakai)</option>
+          <option value="mutasi">Mutasi (pindah gudang)</option>
+        </select>
+
+        <label>Barang</label>
+        <select id="f-barang_id" required></select>
+
+        <label>Jumlah</label>
+        <input type="number" id="f-jumlah" min="1" required>
+
+        <label>Harga Satuan (Rp, khusus barang masuk)</label>
+        <input type="number" id="f-harga_satuan" min="0" value="0">
+
+        <label>No. SPK / Referensi (opsional)</label>
+        <input type="text" id="f-no_spk">
+
+        <label>Keterangan</label>
+        <textarea id="f-keterangan" rows="2"></textarea>
+
+        <div class="error-msg" id="form-error"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btn-batal">Batal</button>
+          <button type="submit" class="btn-primary" style="margin-top:0;">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+    renderHeaderUser();
+    terapkanBatasanRole();
+
+    document.getElementById("logout-link").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+
+    const labelTipe = { masuk: "Masuk", keluar: "Keluar", mutasi: "Mutasi" };
+
+    async function muatTransaksi() {
+      const tipe = document.getElementById("filter-tipe").value;
+      const qs = tipe ? `?tipe=${tipe}` : "";
+      try {
+        const items = await apiFetch(`/transaksi${qs}`);
+        const tbody = document.getElementById("tabel-transaksi");
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Belum ada transaksi.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = items.map(t => `
+          <tr>
+            <td>${t.nomor_transaksi}</td>
+            <td>${t.tanggal}</td>
+            <td>${labelTipe[t.tipe] || t.tipe}</td>
+            <td>${t.jumlah}</td>
+            <td>${t.sisa_stok}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        alert("Gagal memuat transaksi: " + err.message);
+      }
+    }
+    muatTransaksi();
+    document.getElementById("filter-tipe").addEventListener("change", muatTransaksi);
+
+    const modal = document.getElementById("modal-transaksi");
+    function tutupModal() { modal.classList.remove("open"); document.getElementById("form-error").textContent = ""; }
+
+    async function isiPilihanBarang() {
+      const select = document.getElementById("f-barang_id");
+      try {
+        const items = await apiFetch("/barang");
+        select.innerHTML = items.map(b =>
+          `<option value="${b.id}">${b.nama} (stok: ${b.stok} ${b.satuan})</option>`
+        ).join("");
+      } catch (err) {
+        select.innerHTML = '<option value="">Gagal memuat barang</option>';
+      }
+    }
+
+    document.getElementById("btn-tambah").addEventListener("click", async () => {
+      document.getElementById("form-transaksi").reset();
+      await isiPilihanBarang();
+      modal.classList.add("open");
+    });
+    document.getElementById("btn-batal").addEventListener("click", tutupModal);
+
+    document.getElementById("form-transaksi").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        tipe: document.getElementById("f-tipe").value,
+        barang_id: document.getElementById("f-barang_id").value,
+        jumlah: parseInt(document.getElementById("f-jumlah").value),
+        harga_satuan: parseInt(document.getElementById("f-harga_satuan").value) || 0,
+        no_spk: document.getElementById("f-no_spk").value.trim(),
+        keterangan: document.getElementById("f-keterangan").value.trim(),
+      };
+      try {
+        await apiFetch("/transaksi", { method: "POST", body: JSON.stringify(payload) });
+        tutupModal();
+        muatTransaksi();
+      } catch (err) {
+        document.getElementById("form-error").textContent = err.message;
+      }
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "PINS - PUPKP Inventory System",
+  "short_name": "PINS",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#1e6091",
+  "orientation": "any",
+  "icons": []
+}
