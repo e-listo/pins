@@ -47,34 +47,36 @@ export async function getPegawai() {
 // Re-export agar pemanggil lama tidak rusak.
 export { canWrite, canManageMaster as canAdmin, isSuperadmin as isSuperAdmin } from './roles'
 
-export async function registerUser(nip, password, nama) {
-  const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
-    method: 'POST',
+async function callAdminApi(path, options) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Sesi login tidak valid. Silakan login kembali.')
+
+  const response = await fetch(path, {
+    ...options,
     headers: {
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
+      ...(options?.headers || {}),
     },
-    body: JSON.stringify({ email: `${nip}@pupkp.local`, password, email_confirm: true, user_metadata: { nip, nama } })
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.msg || 'Gagal mendaftarkan user')
-  return data
+
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(result.error || 'Operasi administrator gagal')
+  return result
+}
+
+export async function registerUser(nip, password, nama) {
+  const result = await callAdminApi('/api/admin/users', {
+    method: 'POST',
+    body: JSON.stringify({ nip, password, nama }),
+  })
+  return result.user
 }
 
 export async function resetPasswordByAdmin(authId, newPassword) {
-  const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${authId}`, {
+  const result = await callAdminApi(`/api/admin/users/${encodeURIComponent(authId)}/password`, {
     method: 'PUT',
-    headers: {
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ password: newPassword })
+    body: JSON.stringify({ password: newPassword }),
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.msg || 'Gagal reset password')
-  return data
+  return result.user
 }
