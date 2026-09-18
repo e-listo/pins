@@ -96,21 +96,9 @@ export async function setOperatorGudang(pegawaiId: string, gudangIds: string[]) 
 }
 
 export async function updateFotoUrl(pegawaiId: string, fotoUrl: string | null) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/pegawai?id=eq.${pegawaiId}`,
-    {
-      method: "PATCH",
-      headers: {
-        "apikey": process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!,
-        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!}`,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal",
-      },
-      body: JSON.stringify({ foto_url: fotoUrl }),
-    }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error("Gagal update foto: " + err);
-  }
+  const { error } = await supabase
+    .from('pegawai')
+    .update({ foto_url: fotoUrl })
+    .eq('id', pegawaiId)
+  if (error) throw error
 }
