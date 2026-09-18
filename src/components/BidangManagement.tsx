@@ -135,7 +135,7 @@ export default function BidangManagement({ currentUserRole }: BidangManagementPr
                             <button className="hover:text-emerald-400 transition-colors" title="Edit">
                               <Edit size={16} />
                             </button>
-                            {currentUserRole === 'Super Admin' && (
+                            {currentUserRole === 'superadmin' && (
                               <button className="hover:text-red-400 transition-colors" title="Hapus">
                                 <Trash2 size={16} />
                               </button>

@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../src/lib/supabase";
 import { getPegawai } from "../../../src/lib/auth";
 import { ArrowLeft, Package, Warehouse, Loader2, Search, AlertTriangle } from "lucide-react";
+import { isSuperadmin, isAdminGudang } from "../../../src/lib/roles";
 
 export default function DetailGudang() {
   const params = useParams();
@@ -23,8 +24,8 @@ export default function DetailGudang() {
     try {
       // 1. Cek Hak Akses User yang Login
       const user = await getPegawai();
-      const isSuper = String(user?.role).toLowerCase().includes("super");
-      const isOperator = String(user?.role).toLowerCase() === "operator" || String(user?.role).toLowerCase().includes("gudang");
+      const isSuper = isSuperadmin(user);
+      const isOperator = isAdminGudang(user);
 
       // 2. Ambil info gudang
       const { data: gData, error: gErr } = await supabase

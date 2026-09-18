@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../src/lib/supabase";
 import { getPegawai } from "../src/lib/auth"; // Ambil user aktif
+import { isSuperadmin, isAdminBidang as isAdminBidang_, isAdminGudang } from "../src/lib/roles";
 import { 
   Box, ArrowUpRight, ArrowDownLeft, AlertTriangle, 
   Package, TrendingUp, History, LayoutDashboard 
@@ -62,10 +63,9 @@ export default function Dashboard() {
     setLoading(true);
     try {
       // 1. IDENTIFIKASI ROLE USER
-      const role = String(user?.role).toLowerCase();
-      const isSuperAdmin = role.includes("super");
-      const isAdminBidang = role.includes("admin_bidang");
-      const isOperator = role.includes("operator");
+      const isSuperAdmin = isSuperadmin(user);
+      const isAdminBidang = isAdminBidang_(user);
+      const isOperator = isAdminGudang(user);
 
       // 2. BUILD BUILDER QUERY (Row Level Filtering Frontend)
       let queryBarang = supabase.from('barang').select('*');
@@ -146,7 +146,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const isOperator = String(currentUser?.role).toLowerCase().includes("operator");
+  const isOperator = isAdminGudang(currentUser);
 
   return (
     <div className="space-y-6">
@@ -156,7 +156,7 @@ export default function Dashboard() {
             <LayoutDashboard className="text-amber-500" /> Dashboard Panel
           </h1>
           <p className="text-sm text-slate-400">
-            {String(currentUser?.role).toLowerCase().includes("super") 
+            {isSuperadmin(currentUser) 
               ? "Ringkasan total seluruh inventaris DPUPKP" 
               : `Status terkini inventaris untuk bidang ${currentUser?.bidang || 'Anda'}`}
           </p>

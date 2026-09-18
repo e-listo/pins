@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { getPegawai } from "../../src/lib/auth";
 import { ShieldAlert, Power, Loader2, Lock, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { canManageMaster } from "../../src/lib/roles";
 
 export default function PengaturanSistem() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -25,7 +26,7 @@ export default function PengaturanSistem() {
 
   async function checkAccess() {
     const user = await getPegawai();
-    if (!user || String(user.role).toLowerCase() !== 'superadmin') {
+    if (!canManageMaster(user)) {
       window.location.href = "/";
       return;
     }

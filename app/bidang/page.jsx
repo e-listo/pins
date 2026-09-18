@@ -5,6 +5,7 @@ import { LayoutGrid, List, Plus, Building2, Edit, Trash2, Loader2, X, AlertTrian
 import { supabase } from '../../src/lib/supabase'; 
 import { getPegawai } from '../../src/lib/auth';
 import Link from 'next/link';
+import { isSuperadmin } from '../../src/lib/roles';
 
 export default function BidangPage() {
   const [viewMode, setViewMode] = useState('grid');
@@ -26,7 +27,7 @@ export default function BidangPage() {
   
   const [deletePassword, setDeletePassword] = useState('');
   const [viewGudang, setViewGudang] = useState({ isOpen: false, loading: false, title: "", data: [] });
-  const [currentUserRole, setCurrentUserRole] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     fetchRole();
@@ -35,10 +36,10 @@ export default function BidangPage() {
 
   const fetchRole = async () => {
     const user = await getPegawai();
-    if (user) setCurrentUserRole(user.role);
+    if (user) setCurrentUser(user);
   };
 
-  const isSuperAdmin = String(currentUserRole).toLowerCase().includes('super');
+  const isSuperAdmin = isSuperadmin(currentUser);
 
   const fetchBidangUPT = async () => {
     setIsLoading(true);

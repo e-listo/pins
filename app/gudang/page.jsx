@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { getPegawai } from "../../src/lib/auth";
 import { Search, Edit, Trash2, Key, Loader2, X, LayoutGrid, List as ListIcon, MapPin, Box } from "lucide-react";
+import { isSuperadmin, canDelete } from "../../src/lib/roles";
 
 function Modal({ title, onClose, children }) {
   return (
@@ -40,7 +41,8 @@ export default function ManajemenGudang() {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
   const [deletePassword, setDeletePassword] = useState('');
 
-  const isSuperAdmin = String(currentUser?.role).toLowerCase().includes("super");
+  const isSuperAdmin = isSuperadmin(currentUser);   // cakupan lihat data
+  const bolehHapus  = canDelete(currentUser);       // hak tulis (bukan hanya_baca)
 
   useEffect(() => { loadData(); }, []);
 
@@ -49,7 +51,7 @@ export default function ManajemenGudang() {
     try {
       const user = await getPegawai();
       setCurrentUser(user);
-      const isSuper = String(user?.role).toLowerCase().includes("super");
+      const isSuper = isSuperadmin(user);
       const userBidangId = user?.bidang_id;
 
       // Ambil daftar Bidang untuk Dropdown Form (ID dan Nama)
@@ -132,7 +134,7 @@ export default function ManajemenGudang() {
   };
 
   const handleDeleteClick = (g) => {
-    if (!isSuperAdmin) return alert("Hanya Super Admin yang berhak menghapus data lokasi gudang.");
+    if (!bolehHapus) return alert("Anda tidak berhak menghapus data lokasi gudang.");
     setDeleteModal({ isOpen: true, item: g });
   };
 
@@ -236,7 +238,7 @@ export default function ManajemenGudang() {
                 <button onClick={() => handleEdit(g)} className="p-2 bg-[#0f172a] text-slate-400 hover:text-amber-400 rounded-lg transition-colors border border-slate-700" title="Edit Profil Gudang">
                   <Edit size={16} />
                 </button>
-                <button onClick={() => handleDeleteClick(g)} disabled={!isSuperAdmin} className={`p-2 rounded-lg transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Gudang">
+                <button onClick={() => handleDeleteClick(g)} disabled={!bolehHapus} className={`p-2 rounded-lg transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Gudang">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -271,7 +273,7 @@ export default function ManajemenGudang() {
                     <div className="flex justify-center items-center gap-1.5">
                       <button onClick={() => alert("Fitur lihat isi gudang dalam pengembangan")} className="p-1.5 bg-[#0f172a] text-emerald-400 hover:bg-emerald-500/20 rounded-md transition-colors border border-slate-700" title="Daftar Barang"><Box size={14} /></button>
                       <button onClick={() => handleEdit(g)} className="p-1.5 bg-[#0f172a] text-slate-400 hover:text-amber-400 rounded-md transition-colors border border-slate-700" title="Edit"><Edit size={14} /></button>
-                      <button onClick={() => handleDeleteClick(g)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
+                      <button onClick={() => handleDeleteClick(g)} disabled={!bolehHapus} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
