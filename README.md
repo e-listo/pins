@@ -24,7 +24,7 @@
 
 ## 📦 Tentang PINS
 
-**PINS** membantu pengelolaan inventaris secara terpusat, mulai dari pencatatan barang dan stok, distribusi antar-gudang, transaksi masuk dan keluar, hingga pelaporan. Antarmuka dibuat responsif agar nyaman digunakan melalui komputer, tablet, maupun perangkat Android.
+**PINS** membantu pengelolaan inventaris secara terpusat, mulai dari pencatatan barang dan stok, distribusi antar-gudang, transaksi masuk dan keluar, hingga pelaporan. Setiap gudang dikelola di bawah bidang atau UPT tertentu, sehingga cakupan akses pengguna selaras dengan struktur organisasi Dinas PUPKP. Antarmuka dibuat responsif agar nyaman digunakan melalui komputer, tablet, maupun perangkat Android.
 
 ## ✨ Fitur Utama
 
@@ -33,7 +33,8 @@
 | 📊 Dashboard | Menampilkan ringkasan stok dan aktivitas inventaris |
 | 📦 Barang | Mengelola data barang, stok, kategori, dan identitas aset |
 | 🔄 Transaksi | Mencatat barang masuk, keluar, dan perpindahan gudang |
-| 🏢 Gudang & Bidang | Mengatur lokasi penyimpanan dan unit pengelola |
+| 🏢 Bidang | Mengelola bidang dan UPT sebagai unit pengelola inventaris |
+| 🏪 Gudang | Mengelola lokasi penyimpanan yang terhubung ke bidang/UPT |
 | 📷 QR Scanner | Membuat serta memindai QR code barang |
 | 📑 Laporan | Menyajikan dan mengekspor data inventaris |
 | 👥 Pengguna | Mengelola akun, peran, dan cakupan akses |
@@ -55,10 +56,12 @@
 
 | Peran | Cakupan |
 |---|---|
-| **Super Admin** | Seluruh bidang, master data, dan manajemen pengguna |
+| **Super Admin** | Seluruh bidang, gudang, master data, dan manajemen pengguna |
 | **Admin Bidang** | Seluruh gudang dalam bidang/UPT yang ditetapkan |
 | **Admin Gudang** | Gudang yang ditugaskan kepada pengguna |
 | **Hanya Baca** | Pemantauan dan verifikasi tanpa mengubah data |
+
+> Super Admin dapat menambah, mengubah, dan menghapus bidang maupun gudang secara independen. Setiap gudang wajib diasosiasikan ke satu bidang/UPT.
 
 ## 🧰 Teknologi
 
@@ -110,19 +113,22 @@ npm run lint
 npm run build
 ```
 
-Lakukan pemeriksaan singkat pada login, dashboard, barang, transaksi, gudang, laporan, QR scanner, dan manajemen pengguna.
+Lakukan pemeriksaan singkat pada login, dashboard, barang, transaksi, bidang, gudang, laporan, QR scanner, dan manajemen pengguna.
 
 ## 🗄️ Database
 
 Migrasi database tersedia pada `db/migrations/` dan dijalankan sesuai urutan setelah backup:
 
 ```text
+00_preflight.sql
 01_konsolidasi_tabel.sql
 02_normalisasi_peran_rls.sql
+03_verify_migration.sql
 ```
 
 Dokumentasi tambahan:
 
+- [Runbook Migrasi](db/MIGRATION_RUNBOOK.md)
 - [Audit peran dan hak akses](db/AUDIT_ROLE.md)
 - [Keamanan Supabase Admin](docs/SECURITY_SUPABASE_ADMIN.md)
 
@@ -153,7 +159,8 @@ pins/
 
 ## 🛠️ Progress
 
-- [x] Modul inventaris, transaksi, gudang, kategori, laporan, QR, dan pengguna.
+- [x] Modul inventaris, transaksi, kategori, laporan, QR, dan pengguna.
+- [x] Modul Bidang dan Gudang sebagai entitas terpisah yang saling terasosiasi.
 - [x] Antarmuka responsif untuk desktop dan perangkat lapangan.
 - [x] Normalisasi peran serta pemusatan aturan hak akses.
 - [x] Pengamanan operasi administratif Supabase pada sisi server.
