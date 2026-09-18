@@ -140,7 +140,7 @@ export default function GudangManagement() {
   const getTotalNilai = (gid) => barangList.filter(b => b.gudang_id === gid).reduce((a, b) => a + b.stok * b.harga_satuan, 0);
   const getAlertCount = (gid) => barangList.filter(b => b.gudang_id === gid && b.stok <= b.stok_minimum).length;
 
-  const roleColors = { superadmin:"bg-purple-100 text-purple-700", admin_bidang:"bg-blue-100 text-blue-700", operator:"bg-emerald-100 text-emerald-700", viewer:"bg-slate-100 text-slate-600" };
+  const roleColors = { superadmin:"bg-purple-100 text-purple-700", admin_bidang:"bg-blue-100 text-blue-700", admin_gudang:"bg-emerald-100 text-emerald-700" };
 
   return (
     <div className="space-y-5">

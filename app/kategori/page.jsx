@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { getPegawai } from "../../src/lib/auth";
 import { Tags, X, Loader2, Key, Edit, Trash2, Search, LayoutGrid, List as ListIcon, AlertCircle, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { isSuperadmin, canManageMaster } from "../../src/lib/roles";
 
 const inputCls = "w-full border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0f172a] transition-colors placeholder:text-slate-600";
 
@@ -45,7 +46,8 @@ export default function ManajemenKategori() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  const isSuperAdmin = String(currentUser?.role).toLowerCase().includes("super");
+  const isSuperAdmin = isSuperadmin(currentUser);   // boleh melihat halaman master
+  const bolehUbah   = canManageMaster(currentUser); // boleh menyimpan/menghapus
 
   useEffect(() => { loadData(); }, []);
 
@@ -61,7 +63,7 @@ export default function ManajemenKategori() {
       setCurrentUser(user);
 
       // Hanya tarik data jika user adalah super admin
-      if (String(user?.role).toLowerCase().includes("super")) {
+      if (isSuperadmin(user)) {
         const { data } = await supabase.from('kategori').select('*').order('nama', { ascending: true });
         if (data) setKategori(data);
       }
@@ -116,7 +118,7 @@ export default function ManajemenKategori() {
 
   // --- HANDLERS UNTUK HAPUS SUDO ---
   const handleDeleteClick = (k) => {
-    if (!isSuperAdmin) return alert("Hanya Super Admin yang berhak menghapus data.");
+    if (!bolehUbah) return alert("Anda tidak berhak mengubah master kategori.");
     setDeleteModal({ isOpen: true, item: k });
   };
 
@@ -279,7 +281,7 @@ export default function ManajemenKategori() {
                   <button onClick={() => handleEdit(k)} className="p-2 bg-slate-800 text-slate-300 hover:text-amber-400 rounded-lg transition-colors border border-slate-700 hover:border-amber-500/30" title="Edit Kategori">
                     <Edit size={16} />
                   </button>
-                  <button onClick={() => handleDeleteClick(k)} disabled={!isSuperAdmin} className={`p-2 rounded-lg transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-slate-800 text-red-400 hover:bg-red-500/20 hover:border-red-500/30' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Kategori">
+                  <button onClick={() => handleDeleteClick(k)} disabled={!bolehUbah} className={`p-2 rounded-lg transition-colors border border-slate-700 ${bolehUbah ? 'bg-slate-800 text-red-400 hover:bg-red-500/20 hover:border-red-500/30' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Kategori">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -320,7 +322,7 @@ export default function ManajemenKategori() {
                           <button onClick={() => handleEdit(k)} className="p-1.5 bg-slate-800 text-slate-300 hover:text-amber-400 transition-colors border border-slate-700 rounded-md" title="Edit Kategori">
                             <Edit size={16} />
                           </button>
-                          <button onClick={() => handleDeleteClick(k)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-slate-800 text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`} title="Hapus Kategori">
+                          <button onClick={() => handleDeleteClick(k)} disabled={!bolehUbah} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehUbah ? 'bg-slate-800 text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`} title="Hapus Kategori">
                             <Trash2 size={16} />
                           </button>
                         </div>

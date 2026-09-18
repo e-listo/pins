@@ -4,6 +4,7 @@ import { supabase } from "../../src/lib/supabase";
 import { getPegawai } from "../../src/lib/auth";
 import { Icon, IconPaths } from "../../src/components/ui/Icons";
 import { Search, Edit, Trash2, Key, Loader2, X, Info, Box, LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { isSuperadmin, canDelete } from "../../src/lib/roles";
 
 function Badge({ label, color }) {
   const colors = {
@@ -49,7 +50,8 @@ export default function Transaksi() {
   const [viewMode, setViewMode] = useState("list");
   const [currentUser, setCurrentUser] = useState(null);
   const [currentUserBidang, setCurrentUserBidang] = useState(""); 
-  const isSuperAdmin = String(currentUser?.role).toLowerCase().includes("super");
+  const isSuperAdmin = isSuperadmin(currentUser);   // cakupan lihat data
+  const bolehHapus  = canDelete(currentUser);       // hak tulis
 
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ barang_id: "", jumlah: "", gudang_asal_id: "", gudang_tujuan_id: "", no_spk: "", keterangan: "", harga_satuan: "", bidang_upt: "" });
@@ -70,7 +72,7 @@ export default function Transaksi() {
     try {
       const user = await getPegawai();
       setCurrentUser(user);
-      const isSuper = String(user?.role).toLowerCase().includes("super");
+      const isSuper = isSuperadmin(user);
 
       let userBidangName = user?.bidang?.nama || user?.bidang_upt?.nama || user?.bidang_nama || "";
       if (!userBidangName && user?.bidang_id) {
@@ -282,7 +284,7 @@ export default function Transaksi() {
   };
 
   const handleDeleteClick = (t) => {
-    if (!isSuperAdmin) return alert("Hanya Super Admin yang berhak menghapus riwayat transaksi.");
+    if (!bolehHapus) return alert("Anda tidak berhak menghapus riwayat transaksi.");
     setDeleteModal({ isOpen: true, item: t });
   };
 
@@ -456,7 +458,7 @@ export default function Transaksi() {
                       <div className="flex gap-2">
                         <button onClick={() => setDetailModal({ isOpen: true, item: t })} className="p-1.5 bg-[#0f172a] text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors border border-slate-700" title="Detail"><Info size={14} /></button>
                         <button onClick={() => handleEdit(t)} className="p-1.5 bg-[#0f172a] text-slate-400 hover:text-amber-400 rounded-md transition-colors border border-slate-700" title="Edit Metadata"><Edit size={14} /></button>
-                        <button onClick={() => handleDeleteClick(t)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
+                        <button onClick={() => handleDeleteClick(t)} disabled={!bolehHapus} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
                       </div>
                       <div className="text-right">
                         <p className={`text-xl leading-none font-black ${t.tipe === "masuk" ? "text-emerald-400" : t.tipe === "keluar" ? "text-red-400" : "text-amber-400"}`}>{t.jumlah}</p>
@@ -499,7 +501,7 @@ export default function Transaksi() {
                             <div className="flex justify-center items-center gap-1.5">
                               <button onClick={() => setDetailModal({ isOpen: true, item: t })} className="p-1.5 bg-[#0f172a] text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors border border-slate-700" title="Detail"><Info size={14} /></button>
                               <button onClick={() => handleEdit(t)} className="p-1.5 bg-[#0f172a] text-slate-400 hover:text-amber-400 rounded-md transition-colors border border-slate-700" title="Edit Metadata"><Edit size={14} /></button>
-                              <button onClick={() => handleDeleteClick(t)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
+                              <button onClick={() => handleDeleteClick(t)} disabled={!bolehHapus} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus"><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>

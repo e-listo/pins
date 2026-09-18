@@ -3,13 +3,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { logout } from "../lib/auth";
 import { Camera, Trash2 } from "lucide-react";
+import { isSuperadmin, isAdminBidang, isAdminGudang, canWrite, canManageMaster, canDelete, roleBadge } from "../lib/roles";
 
 const inputCls = "w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-50 bg-slate-50 hover:bg-white transition-colors";
 const ROLE_LABEL = {
-  superadmin:   { label:"Super Admin",     color:"bg-purple-100 text-purple-700" },
-  admin_bidang: { label:"Admin Bidang",    color:"bg-blue-100 text-blue-700" },
-  operator:     { label:"Operator Gudang", color:"bg-emerald-100 text-emerald-700" },
-  viewer:       { label:"Viewer",          color:"bg-slate-100 text-slate-600" },
+  superadmin:   { label:"Super Admin",  color:"bg-purple-100 text-purple-700" },
+  admin_bidang: { label:"Admin Bidang", color:"bg-blue-100 text-blue-700" },
+  admin_gudang: { label:"Admin Gudang", color:"bg-emerald-100 text-emerald-700" },
 };
 const AVATAR_SIZE = 256;
 const AVATAR_QUALITY = 0.85;
@@ -210,7 +210,7 @@ export default function ProfileUser({ onClose }) {
         .select('*').eq("auth_id",user.id).single();
       setPegawai({...p, email:user.email, last_sign_in:user.last_sign_in_at});
       if (p?.foto_url) setAvatarPreview(p.foto_url+"?t="+Date.now());
-      if (p?.role==="operator") {
+      if (isAdminGudang(p)) {
         const {data:og} = await supabase.from("operator_gudang")
           .select("*, gudang:gudang_id(nama,kode_lokasi,alamat)").eq("pegawai_id",p.id);
         setGudangList(og?.map(x=>x.gudang)||[]);
@@ -280,7 +280,7 @@ export default function ProfileUser({ onClose }) {
     finally { setSaving(false); }
   }
 
-  const role=ROLE_LABEL[pegawai?.role]||ROLE_LABEL.viewer;
+  const role=roleBadge(pegawai);
   const inisial=pegawai?.nama?.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
   const pwStr=p=>!p?0:p.length<8?1:/[A-Z]/.test(p)&&/[0-9]/.test(p)&&/[^A-Za-z0-9]/.test(p)?3:2;
   const pwC=["","bg-red-400","bg-amber-400","bg-emerald-400"];
@@ -348,7 +348,7 @@ export default function ProfileUser({ onClose }) {
 
           {/* Tabs */}
           <div className="flex border-b border-slate-100 flex-shrink-0">
-            {[{key:"profil",label:"Profil"},{key:"password",label:"Ubah Password"},{key:"akses",label:pegawai?.role==="operator"?"Akses Gudang":"Info Akses"}].map(t=>(
+            {[{key:"profil",label:"Profil"},{key:"password",label:"Ubah Password"},{key:"akses",label:isAdminGudang(pegawai)?"Akses Gudang":"Info Akses"}].map(t=>(
               <button key={t.key} onClick={()=>{setTab(t.key);setError("");setSuccess("");}}
                 className={`flex-1 py-3 text-sm font-semibold transition-colors border-b-2 ${tab===t.key?"text-blue-600 border-blue-600":"text-slate-500 border-transparent hover:text-slate-700"}`}>
                 {t.label}
@@ -379,7 +379,7 @@ export default function ProfileUser({ onClose }) {
                   </div>
 
                   {/* --- TOMBOL RAHASIA UNTUK SUPERADMIN --- */}
-                  {String(pegawai?.role).toLowerCase().includes("super") && (
+                  {isSuperadmin(pegawai) && (
                     <a href="/migrasi" onClick={(e) => e.stopPropagation()} className="w-full flex items-center justify-center gap-2 py-3 mt-1 mb-1 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl text-sm font-bold hover:bg-purple-100 transition-colors shadow-sm">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                       System Tools: Migrasi Data
@@ -419,14 +419,14 @@ export default function ProfileUser({ onClose }) {
               <div className="p-5 space-y-3">
                 <div className="bg-slate-50 rounded-2xl p-4">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hak Akses: <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${role.color}`}>{role.label}</span></p>
-                  {[["Dashboard",true],["Lihat Data Barang",true],["Tambah/Edit Barang",["superadmin","admin_bidang","operator"].includes(pegawai?.role)],["Input Transaksi",["superadmin","admin_bidang","operator"].includes(pegawai?.role)],["Export Laporan",true],["Manajemen Gudang",["superadmin","admin_bidang"].includes(pegawai?.role)],["Manajemen User",["superadmin"].includes(pegawai?.role)],["Hapus Data",["superadmin"].includes(pegawai?.role)]].map(([f,b])=>(
+                  {[["Dashboard",true],["Lihat Data Barang",true],["Tambah/Edit Barang",canWrite(pegawai)],["Input Transaksi",canWrite(pegawai)],["Export Laporan",true],["Manajemen Gudang",canManageMaster(pegawai)],["Manajemen User",canManageMaster(pegawai)],["Hapus Data",canDelete(pegawai)]].map(([f,b])=>(
                     <div key={f} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
                       <span className="text-sm text-slate-700">{f}</span>
                       <span className={`text-xs font-semibold ${b?"text-emerald-600":"text-slate-400"}`}>{b?"✅ Diizinkan":"🚫 Tidak Diizinkan"}</span>
                     </div>
                   ))}
                 </div>
-                {pegawai?.role==="operator"&&(
+                {isAdminGudang(pegawai)&&(
                   <div className="bg-blue-50 rounded-2xl p-4">
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Gudang yang Dapat Diakses</p>
                     {gudangList.length===0?<p className="text-sm text-slate-400">Belum ada gudang yang di-assign.</p>:gudangList.map(g=>(
@@ -439,7 +439,7 @@ export default function ProfileUser({ onClose }) {
                     ))}
                   </div>
                 )}
-                {pegawai?.role==="admin_bidang"&&pegawai?.bidang&&(
+                {isAdminBidang(pegawai)&&pegawai?.bidang&&(
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Bidang yang Dikelola</p>
                     <p className="font-bold text-slate-800">{pegawai.bidang.nama}</p>

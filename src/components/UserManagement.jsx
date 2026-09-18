@@ -5,6 +5,7 @@ import {
   UserPlus, Search, Edit, Shield, Mail, IdCard, Building,
   Loader2, X, CheckCircle2, Trash2, KeyRound, Eye, EyeOff, LayoutGrid, List as ListIcon, Plus
 } from 'lucide-react';
+import { ROLE, ROLE_OPTIONS, roleBadge, isAdminGudang } from '../lib/roles';
 import { supabase } from '../lib/supabase';
 import { resetPasswordByAdmin, registerUser, getPegawai } from '../lib/auth';
 
@@ -47,10 +48,17 @@ export default function UserManagement() {
   });
 
   const [formData, setFormData] = useState({
-    nama: '', nip: '', email: '', jabatan: '', role: 'Pengurus Barang Pembantu', bidang_id: '', gudang_ids: [], status: 'Aktif'
+    nama: '', nip: '', email: '', jabatan: '', role: ROLE.ADMIN_BIDANG, label_peran: '', hanya_baca: false,
+    bidang_id: '', gudang_ids: [], status: 'Aktif'
   });
 
-  const roles = ['Pengurus Barang', 'Pengurus Barang Pembantu', 'Admin Gudang', 'Verifikator', 'Verifikator Utama', 'superadmin'];
+  // Peran teknis (menentukan CAKUPAN data) - harus cocok dengan
+  // constraint pegawai_role_check di database.
+  const roles = ROLE_OPTIONS;
+
+  // Label jabatan fungsional (kosmetik, bebas). Verifikator dibuat dengan
+  // memilih peran cakupan + mencentang "Hanya baca".
+  const labelPeranUmum = ['Pengurus Barang', 'Pengurus Barang Pembantu', 'Admin Gudang', 'Verifikator', 'Verifikator Utama'];
 
   useEffect(() => { init(); }, []);
 
@@ -89,7 +97,8 @@ export default function UserManagement() {
       let savedPegawaiId = selectedUser?.id;
       const payload = {
         nama: formData.nama, nip: formData.nip, email: formData.email || `${formData.nip}@pupkp.local`,
-        jabatan: formData.jabatan, role: formData.role, bidang_id: formData.bidang_id || null, status: formData.status
+        jabatan: formData.jabatan, role: formData.role, label_peran: formData.label_peran || null,
+        hanya_baca: !!formData.hanya_baca, bidang_id: formData.bidang_id || null, status: formData.status
       };
 
       if (selectedUser) {
@@ -109,14 +118,14 @@ export default function UserManagement() {
         }
       }
 
-      if (formData.role === 'Admin Gudang') {
+      if (formData.role === ROLE.ADMIN_GUDANG) {
         await supabase.from('operator_gudang').delete().eq('pegawai_id', savedPegawaiId);
         if (formData.gudang_ids.length > 0) {
           const relasiGudang = formData.gudang_ids.map(gId => ({ pegawai_id: savedPegawaiId, gudang_id: gId }));
           const { error: errRelasi } = await supabase.from('operator_gudang').insert(relasiGudang);
           if (errRelasi) throw errRelasi;
         }
-      } else if (selectedUser && selectedUser.role === 'Admin Gudang' && formData.role !== 'Admin Gudang') {
+      } else if (selectedUser && isAdminGudang(selectedUser) && formData.role !== ROLE.ADMIN_GUDANG) {
         await supabase.from('operator_gudang').delete().eq('pegawai_id', savedPegawaiId);
       }
 
@@ -185,7 +194,8 @@ export default function UserManagement() {
     const userGudangIds = user.operator_gudang?.map(og => og.gudang?.id).filter(Boolean) || [];
     setFormData({
       nama: user.nama || '', nip: user.nip || '', email: user.email || '', jabatan: user.jabatan || '',
-      role: user.role || 'Pengurus Barang Pembantu', bidang_id: user.bidang_id || '', gudang_ids: userGudangIds, status: user.status || 'Aktif'
+      role: user.role || ROLE.ADMIN_BIDANG, label_peran: user.label_peran || '', hanya_baca: !!user.hanya_baca,
+      bidang_id: user.bidang_id || '', gudang_ids: userGudangIds, status: user.status || 'Aktif'
     });
     setIsModalOpen(true);
   };
@@ -207,7 +217,7 @@ export default function UserManagement() {
         <button
           onClick={() => {
             setSelectedUser(null);
-            setFormData({ nama: '', nip: '', email: '', jabatan: '', role: 'Pengurus Barang Pembantu', bidang_id: '', gudang_ids: [], status: 'Aktif' });
+            setFormData({ nama: '', nip: '', email: '', jabatan: '', role: ROLE.ADMIN_BIDANG, label_peran: '', hanya_baca: false, bidang_id: '', gudang_ids: [], status: 'Aktif' });
             setIsModalOpen(true);
           }}
           className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-900/20 w-full md:w-auto"
@@ -268,7 +278,7 @@ export default function UserManagement() {
                   <div className="flex items-center gap-2 text-xs text-slate-400"><Building size={14} className="text-slate-500"/> <span className="truncate">{user.bidang_upt?.nama || 'Lintas Bidang'}</span></div>
                   <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-700/50">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-[#0f172a] px-2 py-1 rounded-md border border-slate-600 flex items-center gap-1.5">
-                      <Shield size={12} className={user.role === 'Pengurus Barang' || user.role === 'superadmin' ? 'text-amber-500' : 'text-blue-500'} /> {user.role}
+                      <Shield size={12} className={user.role === 'superadmin' ? 'text-amber-500' : 'text-blue-500'} /> {roleBadge(user).label}{user.hanya_baca ? ' (hanya baca)' : ''}
                     </span>
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${user.status === 'Aktif' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                       {user.status}
@@ -345,7 +355,7 @@ export default function UserManagement() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-[#0f172a] px-2 py-1.5 rounded-lg border border-slate-600">
-                          <Shield size={12} className={user.role === 'Pengurus Barang' || user.role === 'superadmin' ? 'text-amber-500' : 'text-blue-500'} /> {user.role}
+                          <Shield size={12} className={user.role === 'superadmin' ? 'text-amber-500' : 'text-blue-500'} /> {roleBadge(user).label}{user.hanya_baca ? ' (hanya baca)' : ''}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -399,9 +409,30 @@ export default function UserManagement() {
               </div>
               <Field label="Hak Akses (Role) *">
                 <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className={selectCls}>
-                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                  {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </Field>
+              <Field label="Label Peran (tampilan)">
+                <input list="daftar-label-peran" type="text" value={formData.label_peran}
+                  onChange={(e) => setFormData({...formData, label_peran: e.target.value})}
+                  placeholder="Contoh: Verifikator Utama" className={inputCls} />
+                <datalist id="daftar-label-peran">
+                  {labelPeranUmum.map(l => <option key={l} value={l} />)}
+                </datalist>
+              </Field>
+              <div className="col-span-2">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-700 bg-slate-800/40 cursor-pointer">
+                  <input type="checkbox" checked={formData.hanya_baca} className="mt-0.5"
+                    onChange={(e) => setFormData({...formData, hanya_baca: e.target.checked})} />
+                  <span>
+                    <span className="block text-sm font-semibold">Hanya baca (pengawasan)</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">
+                      Pengguna tetap melihat seluruh data sesuai cakupan perannya, tetapi tidak dapat
+                      menambah, mengubah, atau menghapus apa pun. Gunakan untuk Verifikator dan Verifikator Utama.
+                    </span>
+                  </span>
+                </label>
+              </div>
               <Field label="Unit Bidang / UPT Penempatan">
                 <select value={formData.bidang_id} onChange={(e) => setFormData({...formData, bidang_id: e.target.value, gudang_ids: []})} className={selectCls}>
                   <option value="">-- Administrator (Lintas Bidang) --</option>
@@ -409,7 +440,7 @@ export default function UserManagement() {
                 </select>
               </Field>
               
-              {formData.role === 'Admin Gudang' && (
+              {formData.role === ROLE.ADMIN_GUDANG && (
                 <div className="col-span-2">
                   <Field label="Akses Operasional Gudang (Pilih Minimal 1) *">
                     <select multiple className={selectCls + " h-24"} value={formData.gudang_ids} onChange={(e) => {

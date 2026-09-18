@@ -5,6 +5,7 @@ import { getPegawai } from "../../src/lib/auth";
 import * as XLSX from "xlsx";
 import { UploadCloud, Download, Database, AlertCircle, CheckCircle2, Loader2, ArrowLeft, CheckSquare, Square, XCircle, Info } from "lucide-react";
 import Link from "next/link";
+import { canManageMaster } from "../../src/lib/roles";
 
 export default function MigrasiData() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -34,7 +35,7 @@ export default function MigrasiData() {
 
   async function checkAuthAndLoadContext() {
     const user = await getPegawai();
-    if (!user || !String(user.role).toLowerCase().includes("super")) {
+    if (!canManageMaster(user)) {
       window.location.href = "/";
       return;
     }

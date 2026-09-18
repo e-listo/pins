@@ -9,6 +9,7 @@ import { supabase } from "../src/lib/supabase";
 import ProfileUser from "../src/components/ProfileUser";
 import { ThemeProvider } from "next-themes";
 import ThemeToggle from "../src/components/ThemeToggle";
+import { isSuperadmin, canBypassMaintenance } from "../src/lib/roles";
 
 const navItems = [
   { key: "/barang", label: "Barang", icon: IconPaths.barang },
@@ -43,9 +44,9 @@ export default function RootLayout({ children }) {
         } else {
           try {
             const { data: config } = await supabase.from('pengaturan_sistem').select('maintenance_mode').eq('id', 1).single();
-            const isSuperAdmin = String(data.role).toLowerCase().includes("super");
+            const bolehBypass = canBypassMaintenance(data);
             
-            if (config?.maintenance_mode && !isSuperAdmin) {
+            if (config?.maintenance_mode && !bolehBypass) {
               window.location.href = "/maintenance";
               return; 
             }
@@ -75,7 +76,7 @@ export default function RootLayout({ children }) {
     );
   }
 
-  const isSuperAdmin = String(currentUser?.role).toLowerCase().includes("super");
+  const isSuperAdmin = isSuperadmin(currentUser);
   const visibleNavItems = navItems.filter(n => !n.adminOnly || isSuperAdmin);
   
   const qrItem = navItems.find(n => n.key === "/qr");

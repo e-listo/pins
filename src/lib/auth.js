@@ -33,26 +33,19 @@ export async function getPegawai() {
     .eq('auth_id', user.id)
     .single()
 
-  // JARING PENGAMAN: Jika database error, paksa jadi Super Admin!
+  // TIDAK ADA bypass di sini. Kegagalan query berarti sesi/izin bermasalah,
+  // bukan alasan untuk menaikkan hak akses. Lihat audit K1.
   if (error || !data) {
-    console.error("Database menolak, bypass diaktifkan!");
-    return { 
-      id: user.id, auth_id: user.id, nip: '3303021706830001', 
-      nama: 'Listo', role: 'superadmin', jabatan: 'Administrator PINS' 
-    };
+    console.error('Gagal memuat profil pegawai:', error?.message)
+    return null
   }
   return data
 }
 
-export function canWrite(pegawai) {
-  return ['superadmin', 'admin_bidang', 'operator'].includes(pegawai?.role)
-}
-export function canAdmin(pegawai) {
-  return ['superadmin', 'admin_bidang'].includes(pegawai?.role)
-}
-export function isSuperAdmin(pegawai) {
-  return pegawai?.role === 'superadmin'
-}
+// Definisi hak akses kini terpusat di src/lib/roles.js supaya konsisten
+// dengan fungsi can_write()/can_write_gudang() di database.
+// Re-export agar pemanggil lama tidak rusak.
+export { canWrite, canManageMaster as canAdmin, isSuperadmin as isSuperAdmin } from './roles'
 
 export async function registerUser(nip, password, nama) {
   const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY

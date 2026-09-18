@@ -5,6 +5,7 @@ import { getPegawai } from "../../src/lib/auth";
 import { Icon, IconPaths } from "../../src/components/ui/Icons";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Key, Loader2, History, Search, LayoutGrid, List as ListIcon, Edit, Trash2, QrCode, Info, X, Box, ChevronLeft, ChevronRight, Printer, Settings } from "lucide-react";
+import { isSuperadmin, isAdminGudang, canDelete } from "../../src/lib/roles";
 
 // Default satuan bawaan
 const defaultSatuanList = ["Unit", "Buah", "Kg", "Meter", "Liter", "Rim", "Set", "Lembar", "Roll"];
@@ -73,7 +74,8 @@ export default function ManajemenBarang() {
   const [printCart, setPrintCart] = useState([]);
   const [printFormat, setPrintFormat] = useState("A4");
 
-  const isSuperAdmin = String(currentUser?.role).toLowerCase().includes("super");
+  const isSuperAdmin = isSuperadmin(currentUser);   // cakupan lihat data
+  const bolehHapus  = canDelete(currentUser);       // hak tulis
   const dynamicSatuanList = Array.from(new Set([...defaultSatuanList, ...barang.map(b => b.satuan).filter(Boolean)])).sort();
 
   useEffect(() => { loadData(); }, []);
@@ -87,8 +89,8 @@ export default function ManajemenBarang() {
     try {
       const user = await getPegawai();
       setCurrentUser(user);
-      const isSuper = String(user?.role).toLowerCase().includes("super");
-      const isOperator = String(user?.role).toLowerCase() === "operator" || String(user?.role).toLowerCase().includes("gudang");
+      const isSuper = isSuperadmin(user);
+      const isOperator = isAdminGudang(user);
 
       let userBidangName = user?.bidang_nama || user?.bidang || user?.bidang_upt || "";
       let userBidangId = user?.bidang_id;
@@ -223,7 +225,7 @@ export default function ManajemenBarang() {
   };
 
   const handleDeleteClick = (b) => {
-    if (!isSuperAdmin) return alert("Hanya Super Admin yang berhak menghapus data.");
+    if (!bolehHapus) return alert("Anda tidak berhak menghapus data barang.");
     setDeleteModal({ isOpen: true, item: b });
   };
 
@@ -407,7 +409,7 @@ export default function ManajemenBarang() {
                             <button onClick={() => handleShowDetail(b)} className="p-1.5 bg-[#0f172a] text-amber-400 hover:bg-amber-500/20 rounded-md transition-colors border border-slate-700" title="Riwayat"><Info size={14} /></button>
                             <button onClick={() => setShowQR(b)} className="p-1.5 bg-[#0f172a] text-emerald-400 hover:bg-emerald-500/20 rounded-md transition-colors border border-slate-700" title="Cetak QR Label"><QrCode size={14} /></button>
                             <button onClick={() => handleEdit(b)} className="p-1.5 bg-[#0f172a] text-slate-400 hover:text-blue-400 rounded-md transition-colors border border-slate-700" title="Edit Data"><Edit size={14} /></button>
-                            <button onClick={() => handleDeleteClick(b)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Permanen"><Trash2 size={14} /></button>
+                            <button onClick={() => handleDeleteClick(b)} disabled={!bolehHapus} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`} title="Hapus Permanen"><Trash2 size={14} /></button>
                           </div>
                           <div className="text-right">
                             <p className={`text-xl leading-none font-black ${isAlert ? "text-red-400" : "text-white"}`}>{b.stok}</p>
@@ -462,7 +464,7 @@ export default function ManajemenBarang() {
                               <button onClick={() => handleShowDetail(b)} className="p-1.5 bg-[#0f172a] text-amber-400 hover:bg-amber-500/20 rounded-md transition-colors border border-slate-700"><Info size={14} /></button>
                               <button onClick={() => setShowQR(b)} className="p-1.5 bg-[#0f172a] text-emerald-400 hover:bg-emerald-500/20 rounded-md transition-colors border border-slate-700"><QrCode size={14} /></button>
                               <button onClick={() => handleEdit(b)} className="p-1.5 bg-[#0f172a] text-slate-400 hover:text-blue-400 rounded-md transition-colors border border-slate-700"><Edit size={14} /></button>
-                              <button onClick={() => handleDeleteClick(b)} disabled={!isSuperAdmin} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${isSuperAdmin ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`}><Trash2 size={14} /></button>
+                              <button onClick={() => handleDeleteClick(b)} disabled={!bolehHapus} className={`p-1.5 rounded-md transition-colors border border-slate-700 ${bolehHapus ? 'bg-[#0f172a] text-red-400 hover:bg-red-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'}`}><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>
