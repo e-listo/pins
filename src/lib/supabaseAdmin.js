@@ -30,9 +30,11 @@ export async function requireWritableSuperadmin(request) {
     return { error: 'Sesi login tidak valid atau sudah berakhir.', status: 401 };
   }
 
+  // select('*') menjaga endpoint tetap dapat dipakai sebelum dan sesudah
+  // migrasi yang menambahkan kolom hanya_baca.
   const { data: pegawai, error: pegawaiError } = await admin
     .from('pegawai')
-    .select('id, role, hanya_baca, status')
+    .select('*')
     .eq('auth_id', userData.user.id)
     .single();
 
