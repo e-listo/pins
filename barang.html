@@ -6,112 +6,163 @@
 <title>Barang - PINS</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/style.css">
-<meta name="theme-color" content="#1e6091">
+<meta name="theme-color" content="#1a56db">
 </head>
 <body>
-  <header class="app-header">
-    <div class="title">PINS DPUPKP</div>
-    <div class="user-info">
-      <div id="user-name">-</div>
-      <div class="role" id="user-role">-</div>
+  <div class="pins-main">
+    <div class="topbar">
+      <h2>PINS DPUPKP</h2>
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <strong id="user-name">-</strong>
+          <span id="user-role">-</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Keluar</button>
+      </div>
     </div>
-  </header>
-  <nav class="nav-tabs">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="barang.html" class="active">Barang</a>
-    <a href="transaksi.html">Transaksi</a>
-    <a href="scan.html">Scan QR</a>
-    <a href="#" id="logout-link">Keluar</a>
-  </nav>
+    <nav class="nav-tabs">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="barang.html" class="active">Barang</a>
+      <a href="transaksi.html">Transaksi</a>
+      <a href="scan.html">Scan QR</a>
+    </nav>
 
-  <div class="container">
-    <div class="toolbar">
-      <input type="search" id="cari" placeholder="Cari nama/kode barang...">
-      <button class="btn-primary" style="width:auto;margin-top:0;" data-role="superadmin,Admin Gudang" id="btn-tambah">+ Tambah Barang</button>
-    </div>
+    <div class="content">
+      <div class="toolbar-v2">
+        <div class="search-row">
+          <input type="search" id="cari" class="search-input" placeholder="Cari nama atau kode barang...">
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-primary btn-sm" data-role="superadmin,Admin Gudang" id="btn-tambah">+ Tambah Barang</button>
+          <span class="jumlah-info" id="jumlah-barang"></span>
+        </div>
+      </div>
 
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Kode</th><th>Nama</th><th>Kategori</th><th>Stok</th><th>Satuan</th><th></th></tr>
-        </thead>
-        <tbody id="tabel-barang">
-          <tr><td colspan="6" class="text-muted">Memuat data...</td></tr>
-        </tbody>
-      </table>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Kode</th><th>Nama</th><th>Kategori</th><th>Stok</th><th>Satuan</th><th></th></tr>
+            </thead>
+            <tbody id="tabel-barang">
+              <tr><td colspan="6" class="loading-row">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-list" id="card-barang"></div>
+      </div>
     </div>
   </div>
 
   <div class="modal-overlay" id="modal-barang">
-    <div class="modal-box">
+    <div class="modal">
       <h3 id="modal-title">Tambah Barang</h3>
       <form id="form-barang">
         <input type="hidden" id="barang-id">
-        <label>Kode Aset</label>
-        <input type="text" id="f-kode_aset" required>
-        <label>Nama Barang</label>
-        <input type="text" id="f-nama" required>
-        <label>Kategori</label>
-        <input type="text" id="f-kategori" required placeholder="Contoh: Material Konstruksi">
-        <label>Satuan</label>
-        <input type="text" id="f-satuan" value="Unit">
-        <label>Stok Minimum</label>
-        <input type="number" id="f-stok_minimum" value="10" min="0">
-        <label>Harga Satuan (Rp)</label>
-        <input type="number" id="f-harga_satuan" value="0" min="0">
-        <label>Keterangan</label>
-        <textarea id="f-keterangan" rows="2"></textarea>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Kode Aset <span class="wajib">*</span></label>
+            <input type="text" id="f-kode_aset" required>
+          </div>
+          <div class="form-group">
+            <label>Satuan</label>
+            <input type="text" id="f-satuan" value="Unit">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nama Barang <span class="wajib">*</span></label>
+          <input type="text" id="f-nama" required>
+        </div>
+        <div class="form-group">
+          <label>Kategori <span class="wajib">*</span></label>
+          <input type="text" id="f-kategori" required placeholder="Contoh: Material Konstruksi">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stok Minimum</label>
+            <input type="number" id="f-stok_minimum" value="10" min="0">
+          </div>
+          <div class="form-group">
+            <label>Harga Satuan (Rp)</label>
+            <input type="number" id="f-harga_satuan" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Keterangan</label>
+          <textarea id="f-keterangan" rows="2"></textarea>
+        </div>
 
         <div class="error-msg" id="form-error"></div>
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="btn-batal">Batal</button>
-          <button type="submit" class="btn-primary" style="margin-top:0;">Simpan</button>
+          <button type="button" class="btn btn-secondary" id="btn-batal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
+  <div id="toast-wrap"></div>
+
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     requireLogin();
     renderHeaderUser();
     terapkanBatasanRole();
-
-    document.getElementById("logout-link").addEventListener("click", (e) => {
-      e.preventDefault();
-      logout();
-    });
+    document.getElementById("logout-btn").addEventListener("click", logout);
 
     let daftarBarang = [];
 
     function badgeStok(b) {
       return b.stok < b.stok_minimum
-        ? `<span class="badge badge-danger">${b.stok}</span>`
-        : `<span class="badge badge-ok">${b.stok}</span>`;
+        ? `<span class="badge badge-merah">${b.stok}</span>`
+        : `<span class="badge badge-hijau">${b.stok}</span>`;
     }
 
     function renderTabel(items) {
       const tbody = document.getElementById("tabel-barang");
+      const cardList = document.getElementById("card-barang");
       const user = getUser();
       const bisaEdit = ["superadmin", "Admin Gudang", "Pengurus Barang Pembantu"].includes(user.role);
       const bisaHapus = user.role === "superadmin";
+      document.getElementById("jumlah-barang").textContent = `${items.length} barang`;
 
       if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Belum ada data barang.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="loading-row">Belum ada data barang.</td></tr>';
+        cardList.innerHTML = '<div class="loading-row">Belum ada data barang.</div>';
         return;
       }
+
       tbody.innerHTML = items.map(b => `
         <tr>
-          <td>${b.kode_aset}</td>
+          <td><code style="color:#1a56db;font-size:.78rem;">${b.kode_aset}</code></td>
           <td>${b.nama}</td>
-          <td>${b.kategori}</td>
+          <td><span class="badge badge-biru">${b.kategori}</span></td>
           <td>${badgeStok(b)}</td>
           <td>${b.satuan}</td>
-          <td>
-            ${bisaEdit ? `<button class="btn-secondary btn-sm" onclick="bukaEdit('${b.id}')">Edit</button>` : ""}
-            ${bisaHapus ? `<button class="btn-danger btn-sm" onclick="hapusBarang('${b.id}')">Hapus</button>` : ""}
+          <td style="white-space:nowrap;">
+            ${bisaEdit ? `<button class="btn btn-secondary btn-sm" onclick="bukaEdit('${b.id}')">Edit</button>` : ""}
+            ${bisaHapus ? `<button class="btn btn-danger btn-sm" onclick="hapusBarang('${b.id}')">Hapus</button>` : ""}
           </td>
         </tr>
+      `).join("");
+
+      cardList.innerHTML = items.map(b => `
+        <div class="item-card">
+          <div class="item-card-top">
+            <span class="item-card-kode">${b.kode_aset}</span>
+            ${badgeStok(b)}
+          </div>
+          <div class="item-card-title">${b.nama}</div>
+          <div class="item-card-meta">
+            <span class="badge badge-biru">${b.kategori}</span>
+            <span>${b.satuan}</span>
+          </div>
+          <div class="item-card-actions">
+            ${bisaEdit ? `<button class="btn btn-secondary btn-sm" onclick="bukaEdit('${b.id}')">Edit</button>` : ""}
+            ${bisaHapus ? `<button class="btn btn-danger btn-sm" onclick="hapusBarang('${b.id}')">Hapus</button>` : ""}
+          </div>
+        </div>
       `).join("");
     }
 
@@ -120,7 +171,7 @@
         daftarBarang = await apiFetch("/barang");
         renderTabel(daftarBarang);
       } catch (err) {
-        alert("Gagal memuat barang: " + err.message);
+        pinsToast("Gagal memuat barang: " + err.message, "error");
       }
     }
     muatBarang();
@@ -134,7 +185,7 @@
     });
 
     const modal = document.getElementById("modal-barang");
-    function tutupModal() { modal.classList.remove("open"); document.getElementById("form-error").textContent = ""; }
+    function tutupModal() { modal.classList.remove("show"); document.getElementById("form-error").textContent = ""; }
 
     document.getElementById("btn-tambah").addEventListener("click", () => {
       document.getElementById("modal-title").textContent = "Tambah Barang";
@@ -142,7 +193,7 @@
       document.getElementById("barang-id").value = "";
       document.getElementById("f-satuan").value = "Unit";
       document.getElementById("f-stok_minimum").value = 10;
-      modal.classList.add("open");
+      modal.classList.add("show");
     });
     document.getElementById("btn-batal").addEventListener("click", tutupModal);
 
@@ -158,16 +209,18 @@
       document.getElementById("f-stok_minimum").value = b.stok_minimum;
       document.getElementById("f-harga_satuan").value = b.harga_satuan;
       document.getElementById("f-keterangan").value = b.keterangan || "";
-      modal.classList.add("open");
+      modal.classList.add("show");
     }
 
     async function hapusBarang(id) {
-      if (!confirm("Yakin hapus barang ini? Aksi ini tidak bisa dibatalkan.")) return;
+      const ok = await pinsConfirm("Yakin hapus barang ini? Aksi ini tidak bisa dibatalkan.", "\uD83D\uDDD1\uFE0F");
+      if (!ok) return;
       try {
         await apiFetch(`/barang/${id}`, { method: "DELETE" });
+        pinsToast("Barang berhasil dihapus", "success");
         muatBarang();
       } catch (err) {
-        alert("Gagal menghapus: " + err.message);
+        pinsToast("Gagal menghapus: " + err.message, "error");
       }
     }
 
@@ -186,8 +239,10 @@
       try {
         if (id) {
           await apiFetch(`/barang/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+          pinsToast("Barang berhasil diperbarui", "success");
         } else {
           await apiFetch("/barang", { method: "POST", body: JSON.stringify(payload) });
+          pinsToast("Barang berhasil ditambahkan", "success");
         }
         tutupModal();
         muatBarang();

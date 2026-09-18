@@ -6,66 +6,83 @@
 <title>Dashboard - PINS</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/style.css">
-<meta name="theme-color" content="#1e6091">
+<meta name="theme-color" content="#1a56db">
 </head>
 <body>
-  <header class="app-header">
-    <div class="title">PINS DPUPKP</div>
-    <div class="user-info">
-      <div id="user-name">-</div>
-      <div class="role" id="user-role">-</div>
-    </div>
-  </header>
-  <nav class="nav-tabs">
-    <a href="dashboard.html" class="active">Dashboard</a>
-    <a href="barang.html">Barang</a>
-    <a href="transaksi.html">Transaksi</a>
-    <a href="scan.html">Scan QR</a>
-    <a href="#" id="logout-link">Keluar</a>
-  </nav>
-
-  <div class="container">
-    <div class="grid-2">
-      <div class="card stat-box">
-        <div class="num" id="total-barang">-</div>
-        <div class="label">Jenis Barang</div>
-      </div>
-      <div class="card stat-box alert">
-        <div class="num" id="total-stok-rendah">-</div>
-        <div class="label">Stok di Bawah Minimum</div>
+  <div class="pins-main">
+    <div class="topbar">
+      <h2>PINS DPUPKP</h2>
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <strong id="user-name">-</strong>
+          <span id="user-role">-</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Keluar</button>
       </div>
     </div>
+    <nav class="nav-tabs">
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="barang.html">Barang</a>
+      <a href="transaksi.html">Transaksi</a>
+      <a href="scan.html">Scan QR</a>
+    </nav>
 
-    <div class="card">
-      <h3 style="margin-top:0;">Barang dengan Stok Rendah</h3>
-      <table>
-        <thead>
-          <tr><th>Kode</th><th>Nama</th><th>Stok</th><th>Minimum</th></tr>
-        </thead>
-        <tbody id="tabel-stok-rendah">
-          <tr><td colspan="4" class="text-muted">Memuat data...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div class="content">
+      <div class="grid-2">
+        <div class="card stat-box">
+          <div class="num" id="total-barang">-</div>
+          <div class="label">Jenis Barang</div>
+        </div>
+        <div class="card stat-box alert">
+          <div class="num" id="total-stok-rendah">-</div>
+          <div class="label">Stok di Bawah Minimum</div>
+        </div>
+      </div>
 
-    <div class="card" data-role="superadmin,Verifikator,Verifikator Utama">
-      <h3 style="margin-top:0;">Laporan Resmi</h3>
-      <p class="text-muted">Untuk keperluan rekonsiliasi SIMBARA / bahan pemeriksaan.</p>
-      <button class="btn-secondary btn-sm" id="btn-laporan-stok">Unduh Laporan Stok Resmi</button>
-      <button class="btn-secondary btn-sm" id="btn-laporan-transaksi">Unduh Laporan Transaksi Resmi</button>
+      <div class="card card-pad" style="margin-bottom:14px;">
+        <h3 style="margin:0 0 12px;font-size:.9rem;">Barang dengan Stok Rendah</h3>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Kode</th><th>Nama</th><th>Stok</th><th>Minimum</th></tr>
+            </thead>
+            <tbody id="tabel-stok-rendah">
+              <tr><td colspan="4" class="loading-row">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-list" id="card-stok-rendah"></div>
+      </div>
+
+      <div class="card card-pad mt-16" data-role="superadmin,Verifikator,Verifikator Utama">
+        <h3 style="margin:0 0 4px;font-size:.9rem;">Laporan Resmi</h3>
+        <p class="text-muted" style="margin:0 0 12px;">Untuk keperluan rekonsiliasi SIMBARA / bahan pemeriksaan.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="btn-laporan-stok">Unduh Laporan Stok</button>
+          <button class="btn btn-secondary btn-sm" id="btn-laporan-transaksi">Unduh Laporan Transaksi</button>
+        </div>
+      </div>
     </div>
   </div>
 
+  <div id="toast-wrap"></div>
+
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     requireLogin();
     renderHeaderUser();
     terapkanBatasanRole();
 
-    document.getElementById("logout-link").addEventListener("click", (e) => {
-      e.preventDefault();
-      logout();
-    });
+    document.getElementById("logout-btn").addEventListener("click", logout);
+
+    function badgeStok(b) {
+      return b.stok < b.stok_minimum
+        ? `<span class="badge badge-merah">${b.stok}</span>`
+        : `<span class="badge badge-hijau">${b.stok}</span>`;
+    }
 
     async function muatDashboard() {
       try {
@@ -76,20 +93,35 @@
         document.getElementById("total-stok-rendah").textContent = stokRendah.length;
 
         const tbody = document.getElementById("tabel-stok-rendah");
+        const cardList = document.getElementById("card-stok-rendah");
+
         if (stokRendah.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Tidak ada barang dengan stok rendah.</td></tr>';
-        } else {
-          tbody.innerHTML = stokRendah.map(b => `
-            <tr>
-              <td>${b.kode_aset}</td>
-              <td>${b.nama}</td>
-              <td><span class="badge badge-danger">${b.stok}</span></td>
-              <td>${b.stok_minimum}</td>
-            </tr>
-          `).join("");
+          tbody.innerHTML = '<tr><td colspan="4" class="loading-row">Tidak ada barang dengan stok rendah.</td></tr>';
+          cardList.innerHTML = '<div class="loading-row">Tidak ada barang dengan stok rendah.</div>';
+          return;
         }
+
+        tbody.innerHTML = stokRendah.map(b => `
+          <tr>
+            <td>${b.kode_aset}</td>
+            <td>${b.nama}</td>
+            <td>${badgeStok(b)}</td>
+            <td>${b.stok_minimum}</td>
+          </tr>
+        `).join("");
+
+        cardList.innerHTML = stokRendah.map(b => `
+          <div class="item-card">
+            <div class="item-card-top">
+              <span class="item-card-kode">${b.kode_aset}</span>
+              ${badgeStok(b)}
+            </div>
+            <div class="item-card-title">${b.nama}</div>
+            <div class="item-card-meta"><span>Minimum: ${b.stok_minimum}</span></div>
+          </div>
+        `).join("");
       } catch (err) {
-        alert("Gagal memuat dashboard: " + err.message);
+        pinsToast("Gagal memuat dashboard: " + err.message, "error");
       }
     }
     muatDashboard();

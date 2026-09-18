@@ -6,7 +6,7 @@
 <title>Login - PINS DPUPKP</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/style.css">
-<meta name="theme-color" content="#1e6091">
+<meta name="theme-color" content="#1a56db">
 </head>
 <body>
   <div class="login-wrapper">
@@ -15,20 +15,26 @@
       <p class="subtitle">PUPKP Inventory System &mdash; DPUPKP Kota Yogyakarta</p>
 
       <form id="login-form">
-        <label for="nip">NIP / Email</label>
-        <input type="text" id="nip" name="nip" required autocomplete="username" placeholder="Contoh: 198306172010011015">
-
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
+        <div class="form-group">
+          <label for="nip">NIP / Email</label>
+          <input type="text" id="nip" name="nip" required autocomplete="username" placeholder="Contoh: 198306172010011015">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
 
         <div class="error-msg" id="login-error"></div>
 
-        <button type="submit" class="btn-primary" id="login-btn">Masuk</button>
+        <button type="submit" class="btn btn-primary btn-block mt-16" id="login-btn">Masuk</button>
       </form>
     </div>
   </div>
 
+  <div id="toast-wrap"></div>
+
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (getToken()) {

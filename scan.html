@@ -6,55 +6,58 @@
 <title>Scan QR - PINS</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/style.css">
-<meta name="theme-color" content="#1e6091">
+<meta name="theme-color" content="#1a56db">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="title">PINS DPUPKP</div>
-    <div class="user-info">
-      <div id="user-name">-</div>
-      <div class="role" id="user-role">-</div>
+  <div class="pins-main">
+    <div class="topbar">
+      <h2>PINS DPUPKP</h2>
+      <div class="topbar-actions">
+        <div class="user-meta">
+          <strong id="user-name">-</strong>
+          <span id="user-role">-</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Keluar</button>
+      </div>
     </div>
-  </header>
-  <nav class="nav-tabs">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="barang.html">Barang</a>
-    <a href="transaksi.html">Transaksi</a>
-    <a href="scan.html" class="active">Scan QR</a>
-    <a href="#" id="logout-link">Keluar</a>
-  </nav>
+    <nav class="nav-tabs">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="barang.html">Barang</a>
+      <a href="transaksi.html">Transaksi</a>
+      <a href="scan.html" class="active">Scan QR</a>
+    </nav>
 
-  <div class="container">
-    <div class="card">
-      <h3 style="margin-top:0;">Scan QR Code Aset</h3>
-      <p class="text-muted">Arahkan kamera ke label QR pada barang/aset untuk lihat info stok secara instan.</p>
-      <div id="qr-reader"></div>
-      <button class="btn-secondary mt-16" id="btn-manual" style="width:100%;">Atau Cari Manual Lewat Kode</button>
-    </div>
+    <div class="content">
+      <div class="card card-pad">
+        <h3 style="margin:0 0 4px;font-size:.9rem;">Scan QR Code Aset</h3>
+        <p class="text-muted" style="margin:0 0 14px;">Arahkan kamera ke label QR pada barang untuk lihat info stok secara instan.</p>
+        <div id="qr-reader"></div>
+        <button class="btn btn-secondary btn-block mt-16" id="btn-manual">Atau Cari Manual Lewat Kode</button>
+      </div>
 
-    <div class="card hidden" id="hasil-scan">
-      <h3 style="margin-top:0;">Hasil</h3>
-      <table>
-        <tr><td class="text-muted">Kode Aset</td><td id="r-kode"></td></tr>
-        <tr><td class="text-muted">Nama</td><td id="r-nama"></td></tr>
-        <tr><td class="text-muted">Kategori</td><td id="r-kategori"></td></tr>
-        <tr><td class="text-muted">Stok</td><td id="r-stok"></td></tr>
-        <tr><td class="text-muted">Satuan</td><td id="r-satuan"></td></tr>
-      </table>
+      <div class="card card-pad mt-16 hidden" id="hasil-scan">
+        <h3 style="margin:0 0 12px;font-size:.9rem;">Hasil</h3>
+        <table>
+          <tr><td style="color:#94a3b8;width:100px;">Kode Aset</td><td id="r-kode"></td></tr>
+          <tr><td style="color:#94a3b8;">Nama</td><td id="r-nama"></td></tr>
+          <tr><td style="color:#94a3b8;">Kategori</td><td id="r-kategori"></td></tr>
+          <tr><td style="color:#94a3b8;">Stok</td><td id="r-stok"></td></tr>
+          <tr><td style="color:#94a3b8;">Satuan</td><td id="r-satuan"></td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
+  <div id="toast-wrap"></div>
+
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     requireLogin();
     renderHeaderUser();
     terapkanBatasanRole();
-
-    document.getElementById("logout-link").addEventListener("click", (e) => {
-      e.preventDefault();
-      logout();
-    });
+    document.getElementById("logout-btn").addEventListener("click", logout);
 
     async function cariBarang(kode) {
       try {
@@ -65,8 +68,9 @@
         document.getElementById("r-stok").textContent = `${b.stok} ${b.satuan}`;
         document.getElementById("r-satuan").textContent = b.satuan;
         document.getElementById("hasil-scan").classList.remove("hidden");
+        pinsToast("Barang ditemukan", "success");
       } catch (err) {
-        alert("Barang tidak ditemukan: " + err.message);
+        pinsToast("Barang tidak ditemukan: " + err.message, "error");
       }
     }
 
