@@ -1,18 +1,26 @@
-// src/lib/pinsApi.ts
+const DEFAULT_PINS_API_URL = "https://api-pins.dpupkp.my.id/api/v1";
 
-const API_BASE = process.env.NEXT_PUBLIC_PINS_API_URL ?? "https://api-pins.dpupkp.my.id/api/v1";
+export const PINS_API_URL = (
+  process.env.NEXT_PUBLIC_PINS_API_URL || DEFAULT_PINS_API_URL
+).replace(/\/$/, "");
 
-if (!API_BASE && typeof window !== "undefined") {
-  // Tidak melempar error agar halaman tetap bisa dibuka,
-  // tetapi developer mendapat peringatan di console.
-  // Konfigurasi yang benar harus di-set dalam environment.
-  console.warn("NEXT_PUBLIC_PINS_API_URL belum dikonfigurasi. Menggunakan default api-pins.dpupkp.my.id.");
-}
+export type PinsApiHealth = {
+  status: string;
+  service: string;
+};
 
-export async function getPinsApiHealth() {
-  const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`PINS API health check failed: ${res.status}`);
+export async function getPinsApiHealth(
+  signal?: AbortSignal,
+): Promise<PinsApiHealth> {
+  const response = await fetch(`${PINS_API_URL}/health`, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`PINS API health check gagal (${response.status})`);
   }
-  return res.json();
+
+  return response.json();
 }
