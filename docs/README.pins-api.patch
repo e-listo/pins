@@ -1,0 +1,27 @@
+diff --git a/README.md b/README.md
+index 369a9d67..00000000 100644
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,20 @@
+ # PINS (PUPKP Inventory System)
+ 
+ Sistem inventaris dan stok operasional PUPKP.
++
++## Backend resmi
++
++- Backend API: `https://api-pins.dpupkp.my.id/api/v1`.
++- Frontend PINS terintegrasi ke backend melalui environment variable:
++
++```env
++NEXT_PUBLIC_PINS_API_URL=https://api-pins.dpupkp.my.id/api/v1
++```
++
++Jika variable ini tidak di-set, helper `pinsApi` akan menggunakan default `api-pins.dpupkp.my.id`, tetapi disarankan tetap mengisi environment agar konfigurasi eksplisit.
++
++## Indikator koneksi API
++
++Komponen `PinsApiStatus` menampilkan status koneksi ke backend PINS pada halaman yang menyertakannya. Komponen ini hanya melakukan health check ringan dan tidak menyentuh data produksi.
+ 
+ ## Fitur utama
+ 
+ - Pencatatan barang dan stok per gudang
