@@ -131,16 +131,11 @@ Dokumentasi tambahan:
 - [Runbook Migrasi](db/MIGRATION_RUNBOOK.md)
 - [Audit peran dan hak akses](db/AUDIT_ROLE.md)
 - [Keamanan Supabase Admin](docs/SECURITY_SUPABASE_ADMIN.md)
+- [Panduan deployment](docs/DEPLOYMENT.md)
 
 ## 📱 Android
 
-Setelah konfigurasi web siap, sinkronkan proyek Android:
-
-```bash
-npm run build
-npx cap sync android
-npx cap open android
-```
+PINS memakai Route Handler server untuk operasi administratif. Karena itu build Android tidak boleh memuat service-role key dan tidak menggunakan static export sebagai pengganti server. Ikuti [panduan deployment](docs/DEPLOYMENT.md) sebelum finalisasi aplikasi Android.
 
 App ID: `id.go.jogjakota.pupkp.pins`
 
@@ -164,6 +159,7 @@ pins/
 - [x] Antarmuka responsif untuk desktop dan perangkat lapangan.
 - [x] Normalisasi peran serta pemusatan aturan hak akses.
 - [x] Pengamanan operasi administratif Supabase pada sisi server.
+- [x] Konfigurasi runtime server dan pemeriksaan build otomatis.
 - [ ] Validasi deployment dan environment produksi.
 - [ ] Pengujian menyeluruh seluruh peran dan alur transaksi.
 - [ ] Finalisasi distribusi aplikasi Android.
